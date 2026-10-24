@@ -147,6 +147,9 @@ class DeltaClient:
         Retrieves the wallet balances and returns the highest available stablecoin (USDT/USDC/INR) balance.
         If the asset is INR, it converts it to USD/USDT equivalent using Delta India's fixed conversion rate of 85.0.
         """
+        if self.api_key.lower().startswith("mock") or self.api_key == "public":
+            return 50000.0, "USD"
+
         response = self._request("GET", "/v2/wallet/balances", is_private=True)
         if not response.get("success"):
             logger.error(f"Failed to fetch wallet balances: {response.get('error')}")

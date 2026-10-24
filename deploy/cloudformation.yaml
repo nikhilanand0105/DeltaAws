@@ -1,0 +1,179 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  AWS CloudFormation Template for Delta Algorithmic Trading Bot Deployment.
+  BCSE355L - Cloud Architecture Design (2026-27).
+  Provisions Free-Tier eligible EC2 instance, EBS gp3 storage, IAM SSM/CloudWatch role,
+  Security Group (HTTPS/HTTP), CloudWatch Log Group, and High-CPU CloudWatch Alarm.
+
+Parameters:
+  InstanceType:
+    Type: String
+    Default: t3.micro
+    AllowedValues:
+      - t3.micro
+      - t2.micro
+      - t4g.small
+    Description: EC2 instance type (t3.micro/t2.micro is Free Tier eligible in supported regions).
+
+  LatestAmiId:
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: '/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64'
+    Description: Automatically resolves latest official Amazon Linux 2023 AMI ID.
+
+  VpcId:
+    Type: 'AWS::EC2::VPC::Id'
+    Description: Target VPC ID (select your default VPC).
+
+  SubnetId:
+    Type: 'AWS::EC2::Subnet::Id'
+    Description: Target Public Subnet ID in selected VPC.
+
+Resources:
+  # 1. IAM Role for Systems Manager & CloudWatch Unified Agent
+  TradingBotInstanceRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: !Sub 'DeltaTradingBot-InstanceRole-${AWS::Region}'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore'
+        - 'arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy'
+      Policies:
+        - PolicyName: TradingBotSSMParameterAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'ssm:GetParameter'
+                  - 'ssm:GetParameters'
+                  - 'ssm:GetParametersByPath'
+                Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/delta-bot/*'
+
+  # 2. IAM Instance Profile
+  TradingBotInstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      Path: '/'
+      Roles:
+        - !Ref TradingBotInstanceRole
+
+  # 3. Security Group (Restricted strictly to HTTP/HTTPS)
+  TradingBotSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Security group for Delta Trading Bot (Inbound 80, 443; Egress All)
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          Description: Inbound HTTP (Redirected to HTTPS by Nginx)
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+          Description: Inbound HTTPS for Dashboard and TradingView Webhook
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+          Description: Outbound internet access to Delta Exchange API and notifications
+      Tags:
+        - Key: Name
+          Value: sg-delta-trading-bot
+        - Key: Project
+          Value: BCSE355L-DA3
+
+  # 4. Amazon CloudWatch Log Group
+  TradingBotLogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: /aws/ec2/delta-bot
+      RetentionInDays: 7
+
+  # 5. Amazon EC2 Instance
+  TradingBotInstance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: !Ref InstanceType
+      ImageId: !Ref LatestAmiId
+      SubnetId: !Ref SubnetId
+      IamInstanceProfile: !Ref TradingBotInstanceProfile
+      SecurityGroupIds:
+        - !Ref TradingBotSecurityGroup
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 30
+            VolumeType: gp3
+            DeleteOnTermination: true
+            Encrypted: true
+      Tags:
+        - Key: Name
+          Value: Delta-Algorithmic-Trading-Bot
+        - Key: Project
+          Value: BCSE355L-DA3
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -e
+          echo "Starting EC2 UserData Bootstrap..."
+          dnf update -y
+          dnf install -y docker git curl openssl jq amazon-cloudwatch-agent
+
+          mkdir -p /usr/local/lib/docker/cli-plugins
+          curl -SL "https://github.com/docker/compose/releases/latest/download/docker-compose-linux-$(uname -m)" -o /usr/local/lib/docker/cli-plugins/docker-compose
+          chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+          ln -sf /usr/local/lib/docker/cli-plugins/docker-compose /usr/bin/docker-compose
+
+          systemctl enable docker.service
+          systemctl start docker.service
+          usermod -aG docker ec2-user
+
+          mkdir -p /opt/delta-bot
+          cd /opt/delta-bot
+
+          echo "EC2 bootstrap complete. Ready for repository deployment."
+
+  # 6. CloudWatch Metric Alarm for High CPU Utilization
+  HighCPUAlarm:
+    Type: 'AWS::CloudWatch::Alarm'
+    Properties:
+      AlarmName: DeltaBot-HighCPUUtilization
+      AlarmDescription: Triggers when Delta Trading Bot EC2 instance CPU exceeds 80% for 2 consecutive periods
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 80.0
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: InstanceId
+          Value: !Ref TradingBotInstance
+
+Outputs:
+  InstanceId:
+    Description: The EC2 Instance ID of the trading bot
+    Value: !Ref TradingBotInstance
+
+  PublicIp:
+    Description: Public IPv4 Address of the trading bot server
+    Value: !GetAtt TradingBotInstance.PublicIp
+
+  DashboardURL:
+    Description: HTTPS URL to access the web trading dashboard
+    Value: !Sub 'https://${TradingBotInstance.PublicIp}/dashboard'
+
+  WebhookURL:
+    Description: TradingView Webhook listener URL
+    Value: !Sub 'https://${TradingBotInstance.PublicIp}/webhook'

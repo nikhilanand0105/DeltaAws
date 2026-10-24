@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1092.211 545.45" width="1092.211" height="545.45" style="--bg:#1F1F1F;--fg:#CCCCCC;--line:#CCCCCC;--accent:#0078D4;--muted:#CCCCCCCC;--surface:#181818;--border:#CCCCCC;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="seq-arrow" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
+    <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" />
+  </marker>
+  <marker id="seq-arrow-open" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
+    <polyline points="0 0, 8 2.5, 0 5" fill="none" stroke="var(--_arrow)" stroke-width="1" />
+  </marker>
+</defs>
+<g class="block" data-type="loop" data-label="Every 5-10 Seconds">
+  <rect x="30" y="100.44999999999999" width="1032.211" height="395" rx="0" ry="0" fill="none" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="30" y="100.44999999999999" width="152.29" height="18" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="36" y="109.44999999999999" font-size="11" font-weight="600" fill="var(--_text-sec)" dy="3.8499999999999996">loop [Every 5-10 Seconds]</text>
+</g>
+<line class="lifeline" data-actor="User" x1="106.2515" y1="92.45" x2="106.2515" y2="515.45" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="Dash" x1="289.8695" y1="70" x2="289.8695" y2="515.45" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="API" x1="497.9405" y1="70" x2="497.9405" y2="515.45" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="DB" x1="730.4644999999999" y1="70" x2="730.4644999999999" y2="515.45" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="Delta" x1="962.2475" y1="70" x2="962.2475" y2="515.45" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<g class="message" data-from="Dash" data-to="API" data-label="GET /api/pnl" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="289.8695" y1="140.45" x2="497.9405" y2="140.45" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="393.905" y="130.45" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">GET /api/pnl</text>
+</g>
+<g class="message" data-from="API" data-to="DB" data-label="SELECT * FROM strategy_states WHERE position_size != 0" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="497.9405" y1="180.45" x2="730.4644999999999" y2="180.45" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="614.2025" y="170.45" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">SELECT * FROM strategy_states WHERE position_size != 0</text>
+</g>
+<g class="message" data-from="DB" data-to="API" data-label="4 Active Positions (ETH, BTC, SOL)" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="730.4644999999999" y1="220.45" x2="497.9405" y2="220.45" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+  <text x="614.2025" y="210.45" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">4 Active Positions (ETH, BTC, SOL)</text>
+</g>
+<g class="message" data-from="API" data-to="Delta" data-label="GET /v2/tickers" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="497.9405" y1="260.45" x2="962.2475" y2="260.45" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="730.0939999999999" y="250.45" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">GET /v2/tickers</text>
+</g>
+<g class="message" data-from="Delta" data-to="API" data-label="Live Mark Prices (ETH: $2,424 | BTC: $81,517 | SOL: $104)" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="962.2475" y1="300.45" x2="497.9405" y2="300.45" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+  <text x="730.0939999999999" y="290.45" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Live Mark Prices (ETH: $2,424 | BTC: $81,517 | SOL: $104)</text>
+</g>
+<g class="message" data-from="API" data-to="DB" data-label="SELECT * FROM trade_logs ORDER BY timestamp DESC LIMIT 10" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="497.9405" y1="355.45" x2="730.4644999999999" y2="355.45" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="614.2025" y="345.45" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">SELECT * FROM trade_logs ORDER BY timestamp DESC LIMIT 10</text>
+</g>
+<g class="message" data-from="DB" data-to="API" data-label="Historical Closed Trades &amp; Fees" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="730.4644999999999" y1="395.45" x2="497.9405" y2="395.45" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+  <text x="614.2025" y="385.45" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Historical Closed Trades &amp; Fees</text>
+</g>
+<g class="message" data-from="API" data-to="Dash" data-label="Return Combined JSON Payload" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="497.9405" y1="435.45" x2="289.8695" y2="435.45" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+  <text x="393.905" y="425.45" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Return Combined JSON Payload</text>
+</g>
+<g class="message" data-from="Dash" data-to="User" data-label="Update Table, Metrics, and Dynamic Green/Red PnL Ticks" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="289.8695" y1="475.45" x2="106.2515" y2="475.45" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="198.0605" y="465.45" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Update Table, Metrics, and Dynamic Green/Red PnL Ticks</text>
+</g>
+<g class="note" data-position="over" data-actors="API">
+  <polygon points="266.82050000000004,308.45 723.0605,308.45 729.0605,314.45 729.0605,331.45 266.82050000000004,331.45" fill="var(--bg)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <polygon points="723.0605,308.45 729.0605,314.45 723.0605,314.45" fill="var(--_inner-stroke)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="497.94050000000004" y="319.95" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)"><tspan x="497.94050000000004" dy="-3.3000000000000007">Calculate Mark-to-Market PnL dynamically:</tspan><tspan x="497.94050000000004" dy="14.3">UnrealizedPnL = (MarkPrice - EntryPrice) * Size</tspan></text>
+</g>
+<g class="actor" data-id="User" data-label="User / Professor" data-type="actor">
+  <g transform="translate(88.2515,32) scale(1.5)">
+    <path d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" fill="none" stroke="var(--_line)" stroke-width="0.6666666666666666" />
+    <path d="M15 10C15 11.6569 13.6569 13 12 13C10.3431 13 9 11.6569 9 10C9 8.34315 10.3431 7 12 7C13.6569 7 15 8.34315 15 10Z" fill="none" stroke="var(--_line)" stroke-width="0.6666666666666666" />
+    <path d="M5.62842 18.3563C7.08963 17.0398 9.39997 16 12 16C14.6 16 16.9104 17.0398 18.3716 18.3563" fill="none" stroke="var(--_line)" stroke-width="0.6666666666666666" />
+  </g>
+  <text x="106.2515" y="84" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">User / Professor</text>
+</g>
+<g class="actor" data-id="Dash" data-label="Browser Dashboard" data-type="participant">
+  <rect x="212.50300000000001" y="30" width="154.733" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="289.8695" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">Browser Dashboard</text>
+</g>
+<g class="actor" data-id="API" data-label="Flask REST API (/api/pnl)" data-type="participant">
+  <rect x="407.236" y="30" width="181.40899999999996" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="497.9405" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">Flask REST API (/api/pnl)</text>
+</g>
+<g class="actor" data-id="DB" data-label="SQLite DB (instance/local.db)" data-type="participant">
+  <rect x="628.645" y="30" width="203.63899999999998" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="730.4644999999999" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">SQLite DB (instance/local.db)</text>
+</g>
+<g class="actor" data-id="Delta" data-label="Delta Exchange India API" data-type="participant">
+  <rect x="872.284" y="30" width="179.92699999999996" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="962.2475" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">Delta Exchange India API</text>
+</g>
+</svg>

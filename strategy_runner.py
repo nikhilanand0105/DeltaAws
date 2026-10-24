@@ -8,17 +8,18 @@ from datetime import datetime
 from models import db, Account, StrategyState, TradeLog
 from delta_client import DeltaClient
 from strategy_logic import evaluate_strategy
+from config import Config
 
 logger = logging.getLogger(__name__)
 
-# Constants matching Strategy optimized parameters
-SYMBOL = "ETHUSD.P"
-RESOLUTION = "5"  # 5 minutes
-TP1_RR = 1.5
-TP2_RR = 3.0
-USE_BE = True
-USE_LIQ_EXIT = True
-USE_ZLSMA_EXIT = True
+# Constants matching Strategy optimized parameters (configurable via .env)
+SYMBOL = os.getenv("STRATEGY_SYMBOL", "ETHUSD.P")
+RESOLUTION = os.getenv("STRATEGY_RESOLUTION", "5")  # 5 minutes
+TP1_RR = float(os.getenv("STRATEGY_TP1_RR", "1.5"))
+TP2_RR = float(os.getenv("STRATEGY_TP2_RR", "3.0"))
+USE_BE = os.getenv("STRATEGY_USE_BE", "True").lower() == "true"
+USE_LIQ_EXIT = os.getenv("STRATEGY_USE_LIQ_EXIT", "True").lower() == "true"
+USE_ZLSMA_EXIT = os.getenv("STRATEGY_USE_ZLSMA_EXIT", "True").lower() == "true"
 
 def send_strategy_notification(app, title, message, status_color=5763719):
     """Dispatches strategy alerts to Discord/Telegram using existing notification helper in app."""
@@ -150,6 +151,16 @@ def run_strategy_for_account(app, account, client):
             tp2_hit = state_db.tp2_hit
             current_sl = state_db.current_sl
             last_signal_time = state_db.last_signal_time
+            if isinstance(last_signal_time, bytes):
+                try:
+                    last_signal_time = int.from_bytes(last_signal_time, byteorder='little')
+                except Exception:
+                    last_signal_time = None
+            elif last_signal_time is not None:
+                try:
+                    last_signal_time = int(last_signal_time)
+                except Exception:
+                    last_signal_time = None
         
     to_time = int(time.time())
     from_time = to_time - 100000 # ~27 hours of history
@@ -181,8 +192,8 @@ def run_strategy_for_account(app, account, client):
     
     # Last COMPLETED candle is at index -2 (index -1 is the current forming candle)
     candle_idx = -2
-    last_completed_time = df["time"].iloc[candle_idx]
-    last_close = df["close"].iloc[candle_idx]
+    last_completed_time = int(df["time"].iloc[candle_idx])
+    last_close = float(df["close"].iloc[candle_idx])
     
     # Fetch global dry-run setting
     dry_run = True
@@ -314,7 +325,8 @@ def run_strategy_for_account(app, account, client):
             exchange_size = 0.0
             
     # If exchange size is 0 but our state says we are in a position, we got stopped/liquidated/manually closed.
-    if exchange_size == 0.0 and position_size != 0.0:
+    # Only enforce this on real live exchange trading (when not dry_run)
+    if not dry_run and pos is not None and exchange_size == 0.0 and position_size != 0.0:
         logger.info(f"[{account_name}] Position on exchange is flat but local state is active. Resetting state to flat.")
         position_size = 0.0
         entry_price = None
@@ -339,11 +351,15 @@ def run_strategy_for_account(app, account, client):
     if is_circuit_broken:
         logger.warning(f"[{account_name}] Circuit breaker is broken. Enforcing flat state and skipping strategy runner entries.")
         if position_size != 0.0:
-            # Emergency exit just in case
-            client.place_order(product_id, size=abs(int(exchange_size)), side="sell" if exchange_size > 0 else "buy", order_type="market_order", reduce_only=True)
+            if not dry_run:
+                client.place_order(product_id, size=abs(int(exchange_size)), side="sell" if exchange_size > 0 else "buy", order_type="market_order", reduce_only=True)
             update_strategy_state(app, state_id, {"position_size": 0.0})
             position_size = 0.0
         return
+
+    # Update timestamp in DB to show real-time market polling activity
+    import datetime
+    update_strategy_state(app, state_id, {"updated_at": datetime.datetime.now(datetime.timezone.utc)})
 
     # 4. MONITOR ACTIVE POSITION
     if position_size > 0:  # Active Long Position
@@ -352,7 +368,7 @@ def run_strategy_for_account(app, account, client):
         if current_price >= tp1_price and not tp1_hit:
             close_qty = int(math.floor(position_size * 0.5))
             if close_qty > 0:
-                res = client.place_order(product_id, size=close_qty, side="sell", order_type="market_order", reduce_only=True)
+                res = {"success": True} if dry_run else client.place_order(product_id, size=close_qty, side="sell", order_type="market_order", reduce_only=True)
                 if res.get("success"):
                     tp1_hit = True
                     updates = {"tp1_hit": True}
@@ -362,26 +378,29 @@ def run_strategy_for_account(app, account, client):
                     update_strategy_state(app, state_id, updates)
                     pnl_val = (current_price - entry_price_val) * close_qty * contract_val
                     send_strategy_notification(app, f"🟢 Local Strategy: Long TP1 Hit [{account_name}]", f"Closed {close_qty} contracts at {current_price:.2f} (PnL: {pnl_val:+.2f} USD). SL moved to Break-Even ({current_sl:.2f}).")
+                    log_trade(app, SYMBOL, "tp1", "local_strategy", "success", f"Local Strategy Long TP1: {close_qty} lots @ {current_price:.2f} - PnL: {pnl_val:+.2f} USD")
                     
         # TP2 check (30% position close)
         if current_price >= tp2_price and not tp2_hit:
             close_qty = int(math.floor(position_size * 0.3))
             if close_qty > 0:
-                res = client.place_order(product_id, size=close_qty, side="sell", order_type="market_order", reduce_only=True)
+                res = {"success": True} if dry_run else client.place_order(product_id, size=close_qty, side="sell", order_type="market_order", reduce_only=True)
                 if res.get("success"):
                     tp2_hit = True
                     update_strategy_state(app, state_id, {"tp2_hit": True})
                     pnl_val = (current_price - entry_price_val) * close_qty * contract_val
                     send_strategy_notification(app, f"🟢 Local Strategy: Long TP2 Hit [{account_name}]", f"Closed {close_qty} contracts at {current_price:.2f} (PnL: {pnl_val:+.2f} USD).")
+                    log_trade(app, SYMBOL, "tp2", "local_strategy", "success", f"Local Strategy Long TP2: {close_qty} lots @ {current_price:.2f} - PnL: {pnl_val:+.2f} USD")
 
         # Stop Loss check
         if current_price <= current_sl:
-            close_qty = abs(int(exchange_size))
+            close_qty = abs(int(position_size)) if dry_run else abs(int(exchange_size))
             if close_qty > 0:
-                res = client.place_order(product_id, size=close_qty, side="sell", order_type="market_order", reduce_only=True)
+                res = {"success": True} if dry_run else client.place_order(product_id, size=close_qty, side="sell", order_type="market_order", reduce_only=True)
                 if res.get("success"):
                     pnl_val = (current_price - entry_price_val) * close_qty * contract_val
                     send_strategy_notification(app, f"🔴 Local Strategy: Long SL Hit [{account_name}]", f"Position stopped out. Closed remaining {close_qty} contracts at {current_price:.2f} (PnL: {pnl_val:+.2f} USD).", 15680580)
+                    log_trade(app, SYMBOL, "close_long", "local_strategy", "success", f"Local Strategy Long SL Exit: {close_qty} lots @ {current_price:.2f} - PnL: {pnl_val:+.2f} USD")
             update_strategy_state(app, state_id, {
                 "position_size": 0.0,
                 "entry_price": None,
@@ -391,23 +410,25 @@ def run_strategy_for_account(app, account, client):
             
         # ZLSMA Exit check
         if USE_ZLSMA_EXIT and last_close < signals["zlsma"][candle_idx]:
-            close_qty = abs(int(exchange_size))
+            close_qty = abs(int(position_size)) if dry_run else abs(int(exchange_size))
             if close_qty > 0:
-                res = client.place_order(product_id, size=close_qty, side="sell", order_type="market_order", reduce_only=True)
+                res = {"success": True} if dry_run else client.place_order(product_id, size=close_qty, side="sell", order_type="market_order", reduce_only=True)
                 if res.get("success"):
                     pnl_val = (current_price - entry_price_val) * close_qty * contract_val
                     send_strategy_notification(app, f"🟡 Local Strategy: Long ZLSMA Flip Exit [{account_name}]", f"ZLSMA flipped bearish. Closed remaining {close_qty} contracts at {current_price:.2f} (PnL: {pnl_val:+.2f} USD).", 15549011)
+                    log_trade(app, SYMBOL, "close_long", "local_strategy", "success", f"Local Strategy Long ZLSMA Exit: {close_qty} lots @ {current_price:.2f} - PnL: {pnl_val:+.2f} USD")
             update_strategy_state(app, state_id, {"position_size": 0.0})
             return
             
         # Liquidity BSL Exit check
         if USE_LIQ_EXIT and tp1_hit and signals["bsl_created"][candle_idx]:
-            close_qty = abs(int(exchange_size))
+            close_qty = abs(int(position_size)) if dry_run else abs(int(exchange_size))
             if close_qty > 0:
-                res = client.place_order(product_id, size=close_qty, side="sell", order_type="market_order", reduce_only=True)
+                res = {"success": True} if dry_run else client.place_order(product_id, size=close_qty, side="sell", order_type="market_order", reduce_only=True)
                 if res.get("success"):
                     pnl_val = (current_price - entry_price_val) * close_qty * contract_val
                     send_strategy_notification(app, f"🟡 Local Strategy: Long BSL Liquidity Exit [{account_name}]", f"BSL liquidity level created after TP1. Closed remaining {close_qty} contracts at {current_price:.2f} (PnL: {pnl_val:+.2f} USD).", 15549011)
+                    log_trade(app, SYMBOL, "close_long", "local_strategy", "success", f"Local Strategy Long BSL Exit: {close_qty} lots @ {current_price:.2f} - PnL: {pnl_val:+.2f} USD")
             update_strategy_state(app, state_id, {"position_size": 0.0})
             return
 
@@ -417,7 +438,7 @@ def run_strategy_for_account(app, account, client):
         if current_price <= tp1_price and not tp1_hit:
             close_qty = int(math.floor(abs(position_size) * 0.5))
             if close_qty > 0:
-                res = client.place_order(product_id, size=close_qty, side="buy", order_type="market_order", reduce_only=True)
+                res = {"success": True} if dry_run else client.place_order(product_id, size=close_qty, side="buy", order_type="market_order", reduce_only=True)
                 if res.get("success"):
                     tp1_hit = True
                     updates = {"tp1_hit": True}
@@ -427,26 +448,29 @@ def run_strategy_for_account(app, account, client):
                     update_strategy_state(app, state_id, updates)
                     pnl_val = (entry_price_val - current_price) * close_qty * contract_val
                     send_strategy_notification(app, f"🟢 Local Strategy: Short TP1 Hit [{account_name}]", f"Closed {close_qty} contracts at {current_price:.2f} (PnL: {pnl_val:+.2f} USD). SL moved to Break-Even ({current_sl:.2f}).")
+                    log_trade(app, SYMBOL, "tp1", "local_strategy", "success", f"Local Strategy Short TP1: {close_qty} lots @ {current_price:.2f} - PnL: {pnl_val:+.2f} USD")
                     
         # TP2 check (30% position close)
         if current_price <= tp2_price and not tp2_hit:
             close_qty = int(math.floor(abs(position_size) * 0.3))
             if close_qty > 0:
-                res = client.place_order(product_id, size=close_qty, side="buy", order_type="market_order", reduce_only=True)
+                res = {"success": True} if dry_run else client.place_order(product_id, size=close_qty, side="buy", order_type="market_order", reduce_only=True)
                 if res.get("success"):
                     tp2_hit = True
                     update_strategy_state(app, state_id, {"tp2_hit": True})
                     pnl_val = (entry_price_val - current_price) * close_qty * contract_val
                     send_strategy_notification(app, f"🟢 Local Strategy: Short TP2 Hit [{account_name}]", f"Closed {close_qty} contracts at {current_price:.2f} (PnL: {pnl_val:+.2f} USD).")
+                    log_trade(app, SYMBOL, "tp2", "local_strategy", "success", f"Local Strategy Short TP2: {close_qty} lots @ {current_price:.2f} - PnL: {pnl_val:+.2f} USD")
 
         # Stop Loss check
         if current_price >= current_sl:
-            close_qty = abs(int(exchange_size))
+            close_qty = abs(int(position_size)) if dry_run else abs(int(exchange_size))
             if close_qty > 0:
-                res = client.place_order(product_id, size=close_qty, side="buy", order_type="market_order", reduce_only=True)
+                res = {"success": True} if dry_run else client.place_order(product_id, size=close_qty, side="buy", order_type="market_order", reduce_only=True)
                 if res.get("success"):
                     pnl_val = (entry_price_val - current_price) * close_qty * contract_val
                     send_strategy_notification(app, f"🔴 Local Strategy: Short SL Hit [{account_name}]", f"Position stopped out. Closed remaining {close_qty} contracts at {current_price:.2f} (PnL: {pnl_val:+.2f} USD).", 15680580)
+                    log_trade(app, SYMBOL, "close_short", "local_strategy", "success", f"Local Strategy Short SL Exit: {close_qty} lots @ {current_price:.2f} - PnL: {pnl_val:+.2f} USD")
             update_strategy_state(app, state_id, {
                 "position_size": 0.0,
                 "entry_price": None,
@@ -456,23 +480,25 @@ def run_strategy_for_account(app, account, client):
             
         # ZLSMA Exit check
         if USE_ZLSMA_EXIT and last_close > signals["zlsma"][candle_idx]:
-            close_qty = abs(int(exchange_size))
+            close_qty = abs(int(position_size)) if dry_run else abs(int(exchange_size))
             if close_qty > 0:
-                res = client.place_order(product_id, size=close_qty, side="buy", order_type="market_order", reduce_only=True)
+                res = {"success": True} if dry_run else client.place_order(product_id, size=close_qty, side="buy", order_type="market_order", reduce_only=True)
                 if res.get("success"):
                     pnl_val = (entry_price_val - current_price) * close_qty * contract_val
                     send_strategy_notification(app, f"🟡 Local Strategy: Short ZLSMA Flip Exit [{account_name}]", f"ZLSMA flipped bullish. Closed remaining {close_qty} contracts at {current_price:.2f} (PnL: {pnl_val:+.2f} USD).", 15549011)
+                    log_trade(app, SYMBOL, "close_short", "local_strategy", "success", f"Local Strategy Short ZLSMA Exit: {close_qty} lots @ {current_price:.2f} - PnL: {pnl_val:+.2f} USD")
             update_strategy_state(app, state_id, {"position_size": 0.0})
             return
             
         # Liquidity SSL Exit check
         if USE_LIQ_EXIT and tp1_hit and signals["ssl_created"][candle_idx]:
-            close_qty = abs(int(exchange_size))
+            close_qty = abs(int(position_size)) if dry_run else abs(int(exchange_size))
             if close_qty > 0:
-                res = client.place_order(product_id, size=close_qty, side="buy", order_type="market_order", reduce_only=True)
+                res = {"success": True} if dry_run else client.place_order(product_id, size=close_qty, side="buy", order_type="market_order", reduce_only=True)
                 if res.get("success"):
                     pnl_val = (entry_price_val - current_price) * close_qty * contract_val
                     send_strategy_notification(app, f"🟡 Local Strategy: Short SSL Liquidity Exit [{account_name}]", f"SSL liquidity level created after TP1. Closed remaining {close_qty} contracts at {current_price:.2f} (PnL: {pnl_val:+.2f} USD).", 15549011)
+                    log_trade(app, SYMBOL, "close_short", "local_strategy", "success", f"Local Strategy Short SSL Exit: {close_qty} lots @ {current_price:.2f} - PnL: {pnl_val:+.2f} USD")
             update_strategy_state(app, state_id, {"position_size": 0.0})
             return
 
@@ -646,7 +672,7 @@ def strategy_runner_loop(app):
                     client = DeltaClient(
                         api_key=account_data["api_key"],
                         api_secret=account_data["api_secret"],
-                        base_url=app.config.get("BASE_URL", "https://api.delta.exchange")
+                        base_url=app.config.get("BASE_URL") or Config.BASE_URL
                     )
                     run_strategy_for_account(app, account_data, client)
                 except Exception as acc_e:
