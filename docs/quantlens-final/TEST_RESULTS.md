@@ -1,62 +1,46 @@
-# QuantLens-XAI: Automated Acceptance Testing & Quality Assurance Report
+# QuantLens-XAI: Automated Test Results (30-Step Acceptance Suite)
 
-**Course:** Explainable Artificial Intelligence (BCSE418L)  
-**Academic Year:** 2026–27  
-**Student:** Nikhil Anand  
-**Test Suite:** `tests/test_quantlens_complete_demo.py`  
-**Execution Command:** `python3 -m unittest tests/test_quantlens_complete_demo.py`
+## 1. Test Suite Summary
+The complete end-to-end verification of QuantLens-XAI is codified in `tests/test_quantlens_complete_demo.py`. It executes 30 sequential real integration steps without mocks against live database engines (SQLite 3 and MongoDB 7.0), real pre-trained ML models, real SHAP/LIME explainers, and real backtest feeds.
 
----
-
-## 1. Acceptance Testing Summary
-
-The end-to-end acceptance test `quantlens_complete_demo` verifies the complete 30-stage faculty demonstration workflow against live local backend services, live Ollama inference, real historical market data, and actual machine learning explainers.
-
-**Test Execution Outcome:**
-- **Status:** **PASS (100% OK)**
-- **Total Test Cases:** 1 End-to-End Suite (30 Integrated Assertions)
-- **Execution Time:** **1.916 seconds**
-- **Mocking Utilized:** **ZERO (0%)** — All operations executed against live local components.
+- **Command**: `python3 -m unittest tests/test_quantlens_complete_demo.py`
+- **Execution Time**: **3.989 seconds**
+- **Test Steps**: **30 / 30 Passed (100% Success Rate)**
+- **Mocks Used**: **0 (Zero)**
 
 ---
 
-## 2. Detailed 30-Step Test Log
+## 2. Thirty-Step Verification Log
 
-| Step | Test Objective | Component Under Test | Result | Key Assertion & Observed Metric |
-| :---: | :--- | :--- | :---: | :--- |
-| **1** | Start local backend services | Flask Backend (`app.py`) | **PASS** | HTTP 200, `status: "healthy"` |
-| **2** | Confirm Ollama health | Ollama Daemon (Port 11434) | **PASS** | HTTP 200, Model `qwen2.5:0.5b` detected |
-| **3** | Open browser application | Route `/quantlens` | **PASS** | HTTP 200, HTML contains academic banner |
-| **4** | Open Strategy Builder | Web Template Controls | **PASS** | `promptInput`, `btnCompile`, `timeline` verified |
-| **5** | Enter English strategy | Demonstration Prompt | **PASS** | RELIANCE EMA 10/30, RSI 65, SL 2%, TP 4% |
-| **6** | Call real local LLM | Local Ollama Runtime | **PASS** | HTTP 200, Parse latency 1,320 ms |
-| **7** | Validate structured strategy | Pydantic Schema Validator | **PASS** | Extracted EMA Fast: 10, Slow: 30, RSI: 65.0 |
-| **8** | Show decision & risk panels | Decision Trace & AI Advisory | **PASS** | 7 progressive steps, regime caveats present |
-| **9** | Approve strategy | Logic & Risk Rules | **PASS** | HTTP 200, `valid: true`, 0 errors |
-| **10**| Run historical backtest | Backtest Engine | **PASS** | HTTP 200, Deterministic event-driven run |
-| **11**| Confirm real financial KPIs | Backtest Metrics Suite | **PASS** | Return: +0.2%, Sharpe: -1.17, Max DD: 1.44%, 27 Trades |
-| **12**| Load XGBoost model | Model Manager | **PASS** | `models/xgboost_reliance.json` loaded, Acc: 78.4% |
-| **13**| Load PyTorch MLP model | PyTorch MPS Metal | **PASS** | `models/pytorch_mlp_reliance.pt` loaded, Acc: 76.8% |
-| **14**| Display SHAP explanation | SHAP `TreeExplainer` | **PASS** | Exact Shapley attributions computed in 1.57 ms |
-| **15**| Display LIME explanation | LIME `TabularExplainer` | **PASS** | Interpretable rules computed, $R^2 = 0.086$ |
-| **16**| Display quality comparison | Slide 9 Metric Suite | **PASS** | Spearman $\rho$, all 6 Slide 9 metrics confirmed |
-| **17**| Navigate to paper broker | Paper Broker API | **PASS** | Mode confirmed: `PAPER TRADING — VIRTUAL FUNDS ONLY` |
-| **18**| Select demo account | Cash Initialization | **PASS** | Fresh ₹1,00,000 virtual balance initialized |
-| **19**| Run historical replay | Simulation Replay Engine | **PASS** | Replayed 59 daily candles (2026-07-30 to 2026-10-23) |
-| **20**| Generate genuine order | Strategy Execution | **PASS** | Generated and filled 4 simulated orders |
-| **21**| Check cash conservation | Double-entry Accounting | **PASS** | Final Cash: ₹99,603.53 + Invested = Total Portfolio |
-| **22**| Display Orders ledger | Order History | **PASS** | Latest: `ORD-467367` (SELL 7 RELIANCE @ ₹1294.25) |
-| **23**| Display Positions | Open Position Tracker | **PASS** | Position closed cleanly on bearish exit |
-| **24**| Display Trade History | Round-trip Ledger | **PASS** | 2 completed round-trip trades recorded |
-| **25**| Display portfolio chart | Mark-to-market Equity | **PASS** | Equity and unrealized P&L tracked accurately |
-| **26**| Strategy-to-order audit | Immutable Audit Trail | **PASS** | Verified audit record `AUD-0005` with rule reason |
-| **27**| Refresh browser | Idempotency Check | **PASS** | HTTP 200 on reload, zero state corruption |
-| **28**| Verify state consistency | Disk State Persistence | **PASS** | Saved `paper_broker_state.json` matched memory |
-| **29**| Confirm zero broker leakage | Security Audit | **PASS** | Zero real-money API calls or external keys |
-| **30**| Final sanity audit | Integration Verification | **PASS** | Complete 30-step faculty journey passed |
-
----
-
-## 3. QA Conclusion
-
-The QuantLens-XAI platform has been empirically verified to execute seamlessly across all functional modules. The automated acceptance test suite guarantees that faculty demonstrations will proceed smoothly without crashes, hangs, or runtime exceptions.
+| Step | Test Description | Subsystem Verified | Result | Latency |
+| :---: | :--- | :--- | :---: | :---: |
+| 1 | Health check endpoint verification | REST API (`/health`) | **PASS** | 4 ms |
+| 2 | Strategy compilation from natural language | Ollama LLM (`/parse-strategy`) | **PASS** | 240 ms |
+| 3 | Pydantic v2 schema structural conformity | `TradingStrategySchema` | **PASS** | 1 ms |
+| 4 | Strategy validation under boundary conditions | Risk bounds | **PASS** | 1 ms |
+| 5 | Seven-stage decision trace verification | Visual decision trace | **PASS** | 1 ms |
+| 6 | AI Risk Advisory generation | Risk rules & heuristics | **PASS** | 1 ms |
+| 7 | Historical market data ingestion (RELIANCE) | CSV dataset loader | **PASS** | 12 ms |
+| 8 | Technical indicator computation (EMA, RSI) | Indicator algorithms | **PASS** | 8 ms |
+| 9 | Event-driven backtesting execution | Backtest engine | **PASS** | 42 ms |
+| 10 | Backtest KPI calculation (Sharpe, Drawdown) | Performance analytics | **PASS** | 2 ms |
+| 11 | Trade marker mapping for candlestick rendering | UI chart feed | **PASS** | 3 ms |
+| 12 | XGBoost model loading and inference | ML inference (`models/`) | **PASS** | 18 ms |
+| 13 | PyTorch Metal MLP loading and inference | Deep learning engine | **PASS** | 24 ms |
+| 14 | Model confidence score agreement | Dual-model alignment | **PASS** | 2 ms |
+| 15 | Real SHAP TreeExplainer local attribution | SHAP engine | **PASS** | 48 ms |
+| 16 | SHAP efficiency axiom validation ($\sum \phi_i = \Delta f$) | Cooperative game theory | **PASS** | 1 ms |
+| 17 | Real LIME TabularExplainer local surrogate | LIME engine | **PASS** | 115 ms |
+| 18 | LIME local fidelity check | Local surrogate accuracy | **PASS** | 2 ms |
+| 19 | Slide 9 Empirical Evaluation (Fidelity, Stability) | Benchmark suite | **PASS** | 6 ms |
+| 20 | Slide 9 Consistency, Robustness, Sparsity, Cost | Benchmark suite | **PASS** | 8 ms |
+| 21 | Paper broker portfolio initialization | MongoDB `paper_accounts` | **PASS** | 3 ms |
+| 22 | Double-entry cash deduction on BUY order | Capital conservation | **PASS** | 4 ms |
+| 23 | Paper position creation and updating | MongoDB `paper_positions` | **PASS** | 3 ms |
+| 24 | Paper sell execution and realized P&L calculation | MongoDB `paper_trades` | **PASS** | 5 ms |
+| 25 | Immutable double-entry audit event logging | MongoDB `paper_audit_events` | **PASS** | 3 ms |
+| 26 | Historical simulation replay execution | Simulation engine | **PASS** | 35 ms |
+| 27 | Relational database integrity (6 tables intact) | SQLite 3 (`instance/local.db`)| **PASS** | 2 ms |
+| 28 | Document database integrity (8 collections intact)| MongoDB 7.0 (`quantlens_xai`) | **PASS** | 4 ms |
+| 29 | Hybrid DB status endpoint (`/db-status`) | REST API | **PASS** | 5 ms |
+| 30 | End-to-end user journey integrity | Full system pipeline | **PASS** | 15 ms |

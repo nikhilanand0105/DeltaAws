@@ -347,13 +347,35 @@ class TestQuantLensCompleteDemo(unittest.TestCase):
         print("  ✓ Browser re-query successful with zero state corruption.")
 
         # -------------------------------------------------------------
-        # STEP 28: Verify state consistency
+        # STEP 28: Verify state consistency & MongoDB persistence
         # -------------------------------------------------------------
-        print("\n[Step 28/30] Verifying persisted state consistency from disk...")
+        print("\n[Step 28/30] Verifying hybrid database persistence (SQLite + MongoDB)...")
         broker_after = self.client.get("/api/quantlens/paper-broker/dashboard")
         dash_after = broker_after.json.get("dashboard", {})
         self.assertEqual(dash_after.get("total_portfolio_value"), dash.get("total_portfolio_value"))
-        print(f"  ✓ State consistency verified on disk (Portfolio: ₹{dash_after.get('total_portfolio_value'):,.2f}).")
+
+        # Verify MongoDB collections directly
+        from quantlens.db_mongodb import get_mongodb
+        db_mgr = get_mongodb()
+        self.assertTrue(db_mgr.is_connected(), "MongoDB must be connected")
+        mongo_status = db_mgr.get_status()
+        self.assertGreater(mongo_status["collections"]["paper_accounts"], 0)
+        self.assertGreater(mongo_status["collections"]["paper_orders"], 0)
+        self.assertGreater(mongo_status["collections"]["paper_audit_events"], 0)
+        self.assertGreater(mongo_status["collections"]["xai_evaluation_results"], 0)
+        print(f"  ✓ State consistency verified in MongoDB 'quantlens_xai':")
+        print(f"    • paper_accounts: {mongo_status['collections']['paper_accounts']}")
+        print(f"    • paper_orders: {mongo_status['collections']['paper_orders']}")
+        print(f"    • paper_audit_events: {mongo_status['collections']['paper_audit_events']}")
+        print(f"    • xai_evaluation_results: {mongo_status['collections']['xai_evaluation_results']}")
+
+        # Verify SQLite tables preserved
+        db_resp = self.client.get("/api/quantlens/db-status")
+        self.assertEqual(db_resp.status_code, 200)
+        sqlite_info = db_resp.json.get("sqlite", {})
+        self.assertTrue(sqlite_info.get("connected"))
+        self.assertEqual(sqlite_info.get("integrity"), "ok")
+        print(f"  ✓ SQLite relational database verified healthy ({len(sqlite_info.get('tables', {}))} tables intact).")
 
         # -------------------------------------------------------------
         # STEP 29: Confirm no real broker endpoint was called

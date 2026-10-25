@@ -288,3 +288,49 @@ def api_models_status():
             "metadata": meta
         }
     })
+
+
+@quantlens_bp.route("/api/quantlens/db-status", methods=["GET"])
+def api_db_status():
+    """Returns real-time health and record metrics for both SQLite and MongoDB."""
+    from quantlens.db_mongodb import get_mongodb
+    import sqlite3
+
+    # 1. MongoDB Status
+    mongo_mgr = get_mongodb()
+    mongo_status = mongo_mgr.get_status()
+
+    # 2. SQLite Status
+    sqlite_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "instance", "local.db")
+    sqlite_status = {"connected": False, "tables": {}}
+    if os.path.exists(sqlite_path):
+        try:
+            conn = sqlite3.connect(sqlite_path)
+            cur = conn.cursor()
+            cur.execute("PRAGMA integrity_check;")
+            integrity = cur.fetchone()[0]
+            table_counts = {}
+            for t in ["accounts", "settings", "strategies", "strategy_states", "trade_logs", "local_signal_logs"]:
+                try:
+                    cur.execute(f"SELECT COUNT(*) FROM {t}")
+                    table_counts[t] = cur.fetchone()[0]
+                except Exception:
+                    pass
+            conn.close()
+            sqlite_status = {
+                "connected": True,
+                "file_path": sqlite_path,
+                "integrity": integrity,
+                "engine": "SQLite 3 (via SQLAlchemy 2.0)",
+                "tables": table_counts
+            }
+        except Exception as e:
+            sqlite_status = {"connected": False, "error": str(e)}
+
+    return jsonify({
+        "success": True,
+        "architecture": "Hybrid SQL (SQLite) + NoSQL (MongoDB)",
+        "sqlite": sqlite_status,
+        "mongodb": mongo_status
+    })
+

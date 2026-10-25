@@ -218,6 +218,35 @@ class SimulationEngine:
 
         self.broker.save_state()
 
+        final_pv = self.broker.get_portfolio_value()
+        net_pnl = final_pv - self.broker.initial_capital
+        return_pct = (net_pnl / self.broker.initial_capital) * 100.0 if self.broker.initial_capital > 0 else 0.0
+
+        # Persist simulation run metadata in MongoDB
+        try:
+            from quantlens.db_mongodb import get_mongodb
+            from datetime import datetime
+            import time
+            db_mgr = get_mongodb()
+            if db_mgr.is_connected():
+                run_doc = {
+                    "run_id": f"SIM-{int(time.time() * 1000) % 1000000:06d}",
+                    "strategy_name": strategy.strategy_name,
+                    "symbol": symbol,
+                    "window_bars": len(replay_journal),
+                    "start_date": replay_journal[0]["date"] if replay_journal else None,
+                    "end_date": replay_journal[-1]["date"] if replay_journal else None,
+                    "orders_triggered": orders_triggered,
+                    "final_cash": round(self.broker.cash, 2),
+                    "final_portfolio_value": round(final_pv, 2),
+                    "total_pnl": round(net_pnl, 2),
+                    "total_return_pct": round(return_pct, 2),
+                    "executed_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                }
+                db_mgr.db.paper_simulation_runs.insert_one(run_doc)
+        except Exception as e:
+            logger.warning(f"Failed to record simulation run in MongoDB: {e}")
+
         return {
             "status": "success",
             "symbol": symbol,
@@ -226,9 +255,9 @@ class SimulationEngine:
             "end_date": replay_journal[-1]["date"] if replay_journal else None,
             "orders_triggered": orders_triggered,
             "final_cash": round(self.broker.cash, 2),
-            "final_portfolio_value": round(self.broker.get_portfolio_value(), 2),
-            "total_pnl": round(self.broker.get_portfolio_value() - self.broker.initial_capital, 2),
-            "total_return_pct": round(((self.broker.get_portfolio_value() - self.broker.initial_capital) / self.broker.initial_capital) * 100.0, 2),
+            "final_portfolio_value": round(final_pv, 2),
+            "total_pnl": round(net_pnl, 2),
+            "total_return_pct": round(return_pct, 2),
             "journal": replay_journal,
             "dashboard_summary": self.broker.get_dashboard_summary()
         }

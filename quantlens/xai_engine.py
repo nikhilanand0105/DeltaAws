@@ -270,7 +270,21 @@ def get_xai_engine(symbol: str = "RELIANCE") -> XAIEngine:
 
 
 def get_xai_explanation(symbol: str = "RELIANCE", bar_index: int = -1, target_model: str = "xgboost") -> Dict[str, Any]:
-    """Generates complete local explanation for a specific historical bar."""
+    """Generates complete local explanation for a specific historical bar with MongoDB caching."""
+    from quantlens.db_mongodb import get_mongodb
+    db_mgr = get_mongodb()
+
+    if db_mgr.is_connected():
+        cached = db_mgr.get_cached_xai_explanation(symbol, bar_index, target_model)
+        if cached:
+            return cached
+
     engine = get_xai_engine(symbol)
-    return engine.explain_sample(sample_idx=bar_index, target_model=target_model)
+    res = engine.explain_sample(sample_idx=bar_index, target_model=target_model)
+
+    if db_mgr.is_connected():
+        db_mgr.save_xai_explanation(res)
+
+    return res
+
 

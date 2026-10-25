@@ -1,0 +1,19 @@
+{
+  "initial_capital": 100000.0,
+  "cash": 100000.0,
+  "positions": {},
+  "orders": [],
+  "trade_history": [],
+  "audit_log": [
+    {
+      "audit_id": "AUD-0001",
+      "timestamp": "2026-10-25 11:27:20",
+      "event_type": "ACCOUNT_RESET",
+      "details": "Paper broker reset to initial virtual capital of \u20b9100,000.00 INR",
+      "rule_reason": "Manual / System Action",
+      "cash_after": 100000.0,
+      "portfolio_after": 100000.0
+    }
+  ],
+  "active_strategy": null
+}

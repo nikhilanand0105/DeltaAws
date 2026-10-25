@@ -250,8 +250,16 @@ CACHE_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "cache", "
 
 
 def evaluate_xai_metrics(symbol: str = "RELIANCE", use_cache: bool = True, n_eval_samples: int = 25) -> Dict[str, Any]:
-    """Returns empirical evaluation metrics across the 6 PPT Slide 9 dimensions."""
+    """Returns empirical evaluation metrics across the 6 PPT Slide 9 dimensions with MongoDB caching."""
     sym = symbol.upper().replace(".NS", "")
+    from quantlens.db_mongodb import get_mongodb
+    db_mgr = get_mongodb()
+
+    if use_cache and db_mgr.is_connected():
+        cached = db_mgr.get_cached_xai_evaluation(sym)
+        if cached and "metrics" in cached:
+            return cached
+
     if use_cache and os.path.exists(CACHE_FILE):
         try:
             with open(CACHE_FILE, "r") as f:
@@ -266,7 +274,10 @@ def evaluate_xai_metrics(symbol: str = "RELIANCE", use_cache: bool = True, n_eva
     evaluator = XAIEvaluator(engine)
     res = evaluator.evaluate_all_metrics(n_eval_samples=n_eval_samples)
 
-    # Save to cache
+    if db_mgr.is_connected():
+        db_mgr.save_xai_evaluation(sym, res)
+
+    # Optional file backup for legacy compatibility
     try:
         os.makedirs(os.path.dirname(CACHE_FILE), exist_ok=True)
         with open(CACHE_FILE, "w") as f:
