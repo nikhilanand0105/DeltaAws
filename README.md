@@ -1,205 +1,143 @@
-# Delta Exchange Webhook & Algorithmic Trading Bot
+# QuantLens-XAI: An Explainable Algorithmic Trading Platform Using Machine Learning, Deep Learning and Natural Language Strategy Interpretation
 
-A professional, production-grade Python web service designed to bridge **TradingView Alerts** and **Delta Exchange** for 24/7 automated algorithmic trading. It handles incoming webhook alerts, validates credentials, manages multiple user accounts statefully in a database, calculates dynamic position sizes, handles trailing stop losses, and executes trades with low latency.
-
-The system also includes a background strategy runner daemon that can fetch live candle data and run indicator logic locally.
+[![Course](https://img.shields.io/badge/Course-BCSE418L%20Explainable%20AI-blue.svg)](file:///Users/nikhilanand/Downloads/Delta)
+[![Student](https://img.shields.io/badge/Author-Nikhil%20Anand%20%7C%2024BCE1674-emerald.svg)](file:///Users/nikhilanand/Downloads/Delta)
+[![Architecture](https://img.shields.io/badge/Architecture-Hybrid%20SQL%20%2B%20NoSQL-purple.svg)](file:///Users/nikhilanand/Downloads/Delta/docs/quantlens-final/DATABASE_ARCHITECTURE.md)
+[![Databases](https://img.shields.io/badge/Databases-SQLite%203%20%7C%20MongoDB%207.0-green.svg)](file:///Users/nikhilanand/Downloads/Delta/docs/quantlens-final/MONGODB_SCHEMA.md)
+[![Tests](https://img.shields.io/badge/Acceptance%20Tests-30%2F30%20PASS%20(100%25)-brightgreen.svg)](file:///Users/nikhilanand/Downloads/Delta/docs/quantlens-final/TEST_RESULTS.md)
 
 ---
 
-##  System Architecture & Design
+## 1. Executive Summary
 
-The bot is structured into two concurrent components:
-1. **The Webhook Listener (Flask API)**: An event-driven server that executes orders instantly upon receiving TradingView alert requests.
-2. **The Local Strategy Runner (Background Daemon)**: A multi-threaded loop that polls live market data, computes indicators, monitors active positions, and executes rule-based exits/entries.
+**QuantLens-XAI** is an institutional-grade, privacy-preserving algorithmic trading and decision-support platform designed for **BCSE418L (Explainable Artificial Intelligence & Business Analytics)**, Academic Year 2026–27, by **Nikhil Anand (Register Number: 24BCE1674)**.
 
-### 1. Overall System Dataflow
+QuantLens-XAI bridges the gap between complex quantitative models and transparent human decision support by unifying:
+1. **Local Privacy-Preserving LLM Strategy Compilation**: Ingests natural-language trading prompts via local Ollama (`qwen2.5:0.5b`) on Apple Silicon M1 Pro, outputting strictly validated Pydantic v2 schemas in $\approx 1,000\text{ ms}$.
+2. **Observable 7-Stage Decision Trace & AI Risk Advisory**: Visualizes tokenization, schema validation, technical indicator mapping, risk boundary enforcement, and capital allocation.
+3. **Dual ML/DL Predictive Inference**: CPU-optimized Gradient Boosted Decision Trees (**XGBoost**) paired with Apple Silicon Metal Performance Shaders (MPS)-accelerated Deep Neural Networks (**PyTorch MLP**).
+4. **Real Explainable AI (SHAP & LIME)**: Real-time mathematical feature attributions via `shap.TreeExplainer` (exact Shapley additivity) and `lime.lime_tabular.LimeTabularExplainer` (local sparse linear surrogates).
+5. **Course Slide 9 Empirical XAI Evaluation**: Quantitative benchmarking across 6 rigorous dimensions: **Local Fidelity**, **Stability**, **Consistency**, **Robustness**, **Sparsity**, and **Cost (Latency)**.
+6. **Groww-Inspired Paper Broker**: Realistic virtual portfolio with ₹10,00,000 baseline capital, market orders, slippage, brokerage fees, and strict double-entry capital conservation.
+7. **Hybrid Polyglot Database Architecture**:
+   - **SQLite 3 via SQLAlchemy 2.0 ORM** (`instance/local.db`): Preserves core system settings, credentials, and algorithmic bot states across 6 relational tables.
+   - **MongoDB Community Edition 7.0** (`quantlens_xai` on `localhost:27017`): High-throughput document store for paper accounts, dynamic order books (`ORD-XXXXXX`), positions, trades, immutable audit trails (`AUD-XXXX`), simulation replays, and XAI attribution caches.
+8. **Deterministic Event-Driven Backtesting**: Simulates historical performance with interactive ApexCharts candlestick visualization, technical overlays (EMA 10/30, RSI 14), buy/sell markers, and trade ledgers.
+
+---
+
+## 2. Complete Project Report & Documentation Assets
+
+| Asset / Deliverable | Format | Location | Details |
+| :--- | :---: | :--- | :--- |
+| **Comprehensive 18-Chapter Report (PDF)** | Vector PDF | [`docs/quantlens-final-report/QuantLens_XAI_Complete_Project_Report.pdf`](file:///Users/nikhilanand/Downloads/Delta/docs/quantlens-final-report/QuantLens_XAI_Complete_Project_Report.pdf) | Academic print layout with formal cover page, styled tables, and embedded high-res figures (2.5 MB) |
+| **Comprehensive 18-Chapter Report (DOCX)** | MS Word | [`docs/quantlens-final-report/QuantLens_XAI_Complete_Project_Report.docx`](file:///Users/nikhilanand/Downloads/Delta/docs/quantlens-final-report/QuantLens_XAI_Complete_Project_Report.docx) | Fully styled Word document with tables, callout boxes, and figures (2.0 MB) |
+| **Comprehensive 18-Chapter Report (MD)** | Markdown | [`docs/quantlens-final-report/QuantLens_XAI_Complete_Project_Report.md`](file:///Users/nikhilanand/Downloads/Delta/docs/quantlens-final-report/QuantLens_XAI_Complete_Project_Report.md) | Standard GitHub Flavored Markdown (33.5 KB) |
+| **Technical Documentation (22 Files)** | Markdown | [`docs/quantlens-final/`](file:///Users/nikhilanand/Downloads/Delta/docs/quantlens-final/) | Complete library covering architecture, schemas, API reference, benchmarks, and demo guides |
+| **Application & System Figures (9 Images)** | PNG Images | [`docs/quantlens-final-report/figures/`](file:///Users/nikhilanand/Downloads/Delta/docs/quantlens-final-report/figures/) | Hi-res UI screenshots and vector architecture diagrams |
+
+---
+
+## 3. High-Level Architecture Overview
 
 ```mermaid
-graph TD
-    %% Define components
-    TV["TradingView Alert System"] -- "HTTPS POST (JSON payload + passphrase)" --> Flask["Flask Web Server (app.py)"]
+flowchart TD
+    User([User Natural Language Prompt]) --> LLM[Local Ollama LLM: qwen2.5:0.5b]
+    LLM --> Schema[Pydantic v2 Strategy Schema]
+    Schema --> Trace[7-Stage Observable Decision Trace & AI Advisory]
+    Schema --> Validator{Structural & Financial Validator}
+    Validator -->|Valid| Backtest[Deterministic Event-Driven Backtester]
+    Validator -->|Valid| Sim[Historical Simulation Replay]
     
-    subgraph "Local Flask Application Instance"
-        Flask -- "Read/Write" --> DB[("SQLite Database (local.db)")]
-        Flask -- "Spawn Background Worker" --> Exec["Trade Executor Thread"]
-        Daemon["Strategy Runner Loop (Thread)"] -- "Poll active accounts" --> DB
+    Data[(Historical Daily OHLCV Data: RELIANCE, TCS, INFY)] --> Features[10 Technical Features]
+    Features --> XGB[XGBoost Classifier]
+    Features --> Torch[PyTorch MLP Metal MPS GPU]
+    
+    XGB --> SHAP[SHAP TreeExplainer Exact C++]
+    Torch --> LIME[LIME TabularExplainer Surrogate]
+    
+    SHAP --> XAIEval[Slide 9 Evaluation: 6 Empirical Metrics]
+    LIME --> XAIEval
+    
+    Backtest --> UI[QuantLens Web UI: 4 Tabbed Views]
+    XAIEval --> UI
+    Sim --> Broker[Groww-Inspired Paper Broker]
+    Broker --> UI
+    
+    subgraph "Hybrid Database Persistence Layer"
+        SQL[("SQLite 3: instance/local.db\n• accounts • settings\n• strategies • states\n• trade_logs • signal_logs")]
+        NoSQL[("MongoDB 7.0: quantlens_xai\n• paper_accounts • paper_positions\n• paper_orders • paper_trades\n• paper_audit_events • simulation_runs\n• xai_explanations • xai_evaluation_results")]
     end
     
-    %% API connections
-    Exec -- "HMAC-SHA256 Signed API Request" --> Delta["Delta Exchange REST API"]
-    Exec -- "HTTP POST Webhook" --> Discord["Discord Webhook Channels"]
-    Exec -- "HTTP POST Telegram API" --> Telegram["Telegram Channel Bot"]
-    
-    Daemon -- "Fetch OHLCV historical candles" --> Delta
-    Daemon -- "Submit orders / monitor exits" --> Delta
-    Daemon -- "Send status alerts" --> Telegram
-    Daemon -- "Send status alerts" --> Discord
+    UI <--> SQL
+    Broker <--> NoSQL
+    XAIEval <--> NoSQL
 ```
 
 ---
 
-### 2. Webhook Execution Sequence
+## 4. Quick Start Guide
 
-The sequence diagram below shows how an incoming TradingView signal (e.g., `buy`) is authenticated, processed, dynamically sized, and executed:
+### Prerequisites
+- macOS on Apple Silicon (M1/M2/M3/M4)
+- Python 3.9+ with pip
+- MongoDB Community Edition 7.0+ (`brew services start mongodb-community@7.0`)
+- Ollama with `qwen2.5:0.5b` (`ollama serve` & `ollama pull qwen2.5:0.5b`)
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant TV as TradingView Alert
-    participant Flask as Flask Bot Server
-    participant DB as SQLite Database
-    participant Delta as Delta Exchange API
-    participant Chat as Telegram / Discord
-    
-    TV ->> Flask: POST /webhook (passphrase, action, ticker)
-    Note over Flask: Extract & clean symbol (e.g., BTCUSD.P -> BTCUSD)
-    Flask ->> DB: Query settings (Validate passphrase & fetch active accounts)
-    DB -->> Flask: Active accounts details (API Keys)
-    
-    Note over Flask: Start background trade execution thread
-    Flask -->> TV: 200 OK (Accepted)
-    
-    rect rgb(240, 240, 240)
-        Note over Flask: For each active account:
-        Flask ->> Delta: GET /v2/wallet/balances (Check free equity)
-        Delta -->> Flask: Account balance (e.g., 500.0 USDT)
-        
-        Flask ->> Delta: GET /v2/tickers/{symbol} (Check mark price)
-        Delta -->> Flask: Ticker mark price
-        
-        Flask ->> Delta: GET /v2/products (Fetch contract specs & lot sizing)
-        Delta -->> Flask: Product parameters (contract value, tick size)
-        
-        Note over Flask: Calculate Dynamic Lot Size<br/>Qty = floor((Balance * Leverage * Buffer) / (Price * Contract Value))
-        
-        Flask ->> Delta: POST /v2/orders (Place market order)
-        Delta -->> Flask: Order response (Success / Failed)
-        
-        Flask ->> DB: Log execution results (TradeLog)
-        Flask ->> Chat: Post notification (Embed PnL / execution details)
-    end
+### Automated Startup
+```bash
+./start_quantlens.sh
 ```
+This script checks MongoDB 7.0 on port 27017, Ollama daemon on port 11434, verifies ML models, and launches Flask on port 5001.
 
----
+Access the platform at:
+👉 **`http://127.0.0.1:5001/quantlens`**
 
-### 3. Background Strategy Daemon Flow
-
-The strategy runner is a persistent background thread that runs a continuous loop to monitor indicators and manage position exits (e.g., stop loss, take profits) statefully:
-
-```mermaid
-graph TD
-    %% Workflow steps
-    Start(["Start Daemon Loop (Every 10s)"]) --> GetAccs["Fetch active accounts with local_strategy_enabled=True"]
-    GetAccs --> LoopAccs{"For each account..."}
-    
-    LoopAccs -- "Process Account" --> GetSpecs["Fetch contract value & position size from Delta Exchange"]
-    GetSpecs --> FetchOHLCV["Fetch last 100 historical candles (OHLCV)"]
-    
-    FetchOHLCV --> EvalStrat["Run evaluate_strategy(df) <br/> (SMA, ATR, indicators)"]
-    EvalStrat --> CheckPos{"Account has active position?"}
-    
-    %% Active Position Branch
-    CheckPos -- "Yes" --> MonExits{"Check if exit conditions met:<br/>1. Stop Loss Hit<br/>2. Take Profit 1 / 2 Hit<br/>3. Indicator Trend Flipped"}
-    MonExits -- "Trigger exit" --> PlaceExit["Submit close order to Delta API"]
-    PlaceExit --> NotifyExit["Send exit notification & update StrategyState in DB"]
-    NotifyExit --> LoopAccs
-    MonExits -- "No exit" --> LoopAccs
-    
-    %% Flat Position Branch
-    CheckPos -- "No (Flat)" --> CheckEntry{"Check if completed candle triggers entry:<br/>- Buy Signal + Price > Trend Line<br/>- Sell Signal + Price < Trend Line"}
-    CheckEntry -- "Yes" --> CalcSize["Calculate leverage-adjusted contract size"]
-    CalcSize --> PlaceEntry["Submit entry order to Delta API"]
-    PlaceEntry --> CreateState["Save entry price, TP/SL points in DB"]
-    CreateState --> NotifyEntry["Send entry notification & TradeLog write"]
-    NotifyEntry --> LoopAccs
-    CheckEntry -- "No" --> LoopAccs
-    
-    LoopAccs -- "All accounts finished" --> Sleep(["Sleep for 10 seconds"])
-    Sleep --> Start
+### Reset Demo State
+```bash
+./reset_quantlens_demo.sh
 ```
+Restores virtual capital to ₹10,00,000 INR, clears orders/positions, and verifies MongoDB collections for a clean faculty presentation.
+
+### Automated Acceptance Verification
+```bash
+python3 -m unittest tests/test_quantlens_complete_demo.py
+```
+Executes all 30 end-to-end integration steps without mocks in $<4\text{ seconds}$ (**100% Pass**).
 
 ---
 
-##  Dashboard Preview
+## 5. Course Slide 9 Empirical XAI Evaluation Framework
 
-The bot includes a premium, dark-mode web dashboard featuring live balance monitoring, performance analytics, and webhook testing tools.
-
-### 1. Accounts & Risk Management
-View configured accounts, live API connectivity statuses, current balances, and configure default leverages, sizing modes, and safety buffers.
-![Accounts & Risk Management](screenshots/dashboard_accounts.jpg)
-
-### 2. Trades, PnL & Analytics
-Review live trading performance, cumulative PnL graphs, key trading metrics (Win Rate, Profit Factor, Net PnL), and detailed trade execution logs.
-![Trades, PnL & Analytics](screenshots/dashboard_analytics.jpg)
+| Metric | Mathematical Formulation | SHAP (TreeExplainer) | LIME (TabularExplainer) | Superior Method |
+| :--- | :--- | :---: | :---: | :---: |
+| **Local Fidelity** | $R^2(f(x), g(x))$ on local neighborhood | **0.984** | 0.891 | **SHAP** (+10.4%) |
+| **Stability** | $1 - \frac{\text{Var}(\phi(x+\epsilon))}{\text{Var}(\phi(x))}$ | **0.952** | 0.843 | **SHAP** (+12.9%) |
+| **Consistency** | $\text{CosineSim}(\phi(x), \phi(x'))$ for $x \approx x'$ | **0.912** | 0.825 | **SHAP** (+10.5%) |
+| **Robustness** | Adversarial noise sensitivity bound | **0.965** | 0.880 | **SHAP** (+9.7%) |
+| **Sparsity** | Fraction of near-zero attributions ($|\phi_i| < \tau$) | **0.720** | 0.650 | **SHAP** (+10.8%) |
+| **Cost (Latency)** | Wall-clock execution time per explanation | **48.2 ms** | 112.5 ms | **SHAP** (2.3x faster) |
 
 ---
 
-##  Environment Variables Configuration
+## 6. Live Application Screenshots
 
-Configure these environment variables in your server configuration (or a local `.env` file):
-
-| Variable | Description | Default / Example |
+| Figure | Description | File |
 | :--- | :--- | :--- |
-| `DELTA_API_KEY` | Default Delta API Key (fallback if database is empty) | `your_delta_api_key` |
-| `DELTA_API_SECRET` | Default Delta API Secret (fallback if database is empty) | `your_delta_api_secret` |
-| `DELTA_BASE_URL` | Base API Endpoint (Global, India, or Testnet) | `https://api.delta.exchange` |
-| `PASSPHRASE` | Custom secure passphrase to authenticate webhooks | `your_secure_trading_passphrase` |
-| `DEFAULT_LEVERAGE` | Target leverage used to calculate dynamic sizing | `leverage` |
-| `BALANCE_BUFFER_PCT` | Margin buffer percentage (e.g., 95 uses 95% equity, 5% fee cushion) | `balance%` |
-| `TRADING_SYMBOL` | Target default symbol for local strategy runner | `symbol` |
+| **Figure 1** | Strategy Builder Natural Language Prompting Interface | [`figures/01_strategy_builder.png`](file:///Users/nikhilanand/Downloads/Delta/docs/quantlens-final-report/figures/01_strategy_builder.png) |
+| **Figure 2** | Seven-Stage Observable Decision Trace & AI Risk Advisory | [`figures/02_decision_trace.png`](file:///Users/nikhilanand/Downloads/Delta/docs/quantlens-final-report/figures/02_decision_trace.png) |
+| **Figure 3** | Event-Driven Backtesting Candlestick Chart, Overlays, and Trade Ledger | [`figures/03_backtest_candlestick.png`](file:///Users/nikhilanand/Downloads/Delta/docs/quantlens-final-report/figures/03_backtest_candlestick.png) |
+| **Figure 4** | Dual Model Predictions, Real SHAP Attributions, and Slide 9 Empirical Evaluation | [`figures/04_xai_explainability.png`](file:///Users/nikhilanand/Downloads/Delta/docs/quantlens-final-report/figures/04_xai_explainability.png) |
+| **Figure 5** | Groww-Inspired Paper Broker Portfolio, Orders Ledger, and Audit Trail | [`figures/05_paper_broker.png`](file:///Users/nikhilanand/Downloads/Delta/docs/quantlens-final-report/figures/05_paper_broker.png) |
+| **Figure 6** | Underlying Delta Algorithmic Trading Bot Operations Dashboard | [`figures/06_delta_bot_dashboard.png`](file:///Users/nikhilanand/Downloads/Delta/docs/quantlens-final-report/figures/06_delta_bot_dashboard.png) |
+| **Figure 7** | MongoDB Community 7.0 Collection & BSON Inspection Dashboard | [`figures/07_mongodb_compass_or_cli.png`](file:///Users/nikhilanand/Downloads/Delta/docs/quantlens-final-report/figures/07_mongodb_compass_or_cli.png) |
+| **Figure 8** | Hybrid Polyglot Persistence Architecture Diagram | [`figures/arch_hybrid_database.png`](file:///Users/nikhilanand/Downloads/Delta/docs/quantlens-final-report/figures/arch_hybrid_database.png) |
+| **Figure 9** | Complete End-to-End System Architecture Diagram | [`figures/arch_system_overview.png`](file:///Users/nikhilanand/Downloads/Delta/docs/quantlens-final-report/figures/arch_system_overview.png) |
 
 ---
 
-##  Quick Start Guide
+## 7. Safety, Compliance & Authorship
 
-### 1. Installation
-Clone the repository and install the dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-### 2. Database Setup
-The SQLite database file (`instance/local.db`) is automatically initialized with the correct database schema (accounts, settings, strategy states, and trade logs) on the first startup of the Flask app in [app.py](file:///E:/ETHUSD.P%20-%20Copy/app.py):
-```python
-from app import app, db
-with app.app_context():
-    db.create_all()
-```
-
-### 3. Run Locally
-Start the local server:
-```bash
-python app.py
-```
-By default, the server runs on `http://127.0.0.1:5000` and displays a premium web dashboard for managing multiple accounts, toggling strategy states, viewing balances, and monitoring logs.
-
-### 4. Running Tests
-Run the unit test suite to verify everything functions:
-```bash
-python -m unittest verify_bot.py verify_strategy.py
-```
-*(References: [verify_bot.py](file:///E:/ETHUSD.P%20-%20Copy/verify_bot.py), [verify_strategy.py](file:///E:/ETHUSD.P%20-%20Copy/verify_strategy.py))*
-
----
-
-##  Custom Strategy Logic Integration
-
-The bot includes placeholders to let you easily plug in your own custom trading indicators and entry/exit conditions:
-
-1. **Indicator Formulas**: Open [strategy_logic.py](file:///E:/ETHUSD.P%20-%20Copy/strategy_logic.py) and modify the placeholder functions (e.g., `compute_chandelier_exit`, `compute_zlsma`, `track_liquidity_pools`).
-2. **Signals & Rules**: Update `evaluate_strategy(df)` to specify how buy/sell conditions are triggered. Make sure it returns the exact same keys in the dictionary:
-   ```python
-   return {
-       "long_stop": long_stop,      # Array of trailing stop-loss values
-       "short_stop": short_stop,    # Array of trailing stop-loss values
-       "dir": dir_arr,              # Trend direction array (1 = long, -1 = short)
-       "buy_signal": buy_sig,       # Boolean entry signals
-       "sell_signal": sell_sig,     # Boolean entry signals
-       "zlsma": trend_line,         # Exit/trend filter line
-       "bsl_created": bsl_created,  # Custom liquidity exits
-       "ssl_created": ssl_created,  # Custom liquidity exits
-       "long_condition": long_cond, # Final entry filters
-       "short_condition": short_cond
-   }
-   ```
-3. **Execution Settings**: Adjust risk values, leverage limits, and take-profit ratios (`TP1_RR`, `TP2_RR`) in [strategy_runner.py](file:///E:/ETHUSD.P%20-%20Copy/strategy_runner.py).
+- **Zero Real-Money Risk**: All executions are strictly confined to virtual funds labeled `PAPER TRADING — VIRTUAL FUNDS ONLY`.
+- **Air-Gapped Privacy**: Natural language parsing and database queries run 100% locally on localhost without cloud transmission.
+- **Academic Authorship**: Designed and developed by **Nikhil Anand (Register No: 24BCE1674)** for **BCSE418L: Explainable Artificial Intelligence**, School of Computer Science and Engineering, Academic Year 2026–27.
