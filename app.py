@@ -45,6 +45,15 @@ app.config["BASE_URL"] = Config.BASE_URL
 
 db.init_app(app)
 
+# Register QuantLens-XAI Blueprint
+try:
+    from quantlens.routes import quantlens_bp
+    app.register_blueprint(quantlens_bp)
+    logger.info("Registered QuantLens-XAI Blueprint successfully.")
+except Exception as e:
+    logger.error(f"Failed to register QuantLens-XAI blueprint: {e}")
+
+
 _db_pool_initialized = False
 
 @app.before_request

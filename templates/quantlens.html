@@ -1,0 +1,1754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuantLens-XAI — Explainable Algorithmic Trading Platform</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --card-bg: rgba(21, 23, 30, 0.85);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+            --accent-primary: #8b5cf6;
+            --accent-hover: #7c3aed;
+            --accent-glow: rgba(139, 92, 246, 0.25);
+            --groww-green: #00d09c;
+            --groww-green-glow: rgba(0, 208, 156, 0.2);
+            --danger: #ef4444;
+            --danger-glow: rgba(239, 68, 68, 0.2);
+            --warning: #f59e0b;
+            --info: #3b82f6;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* Top Academic Paper Trading Warning Banner */
+        .academic-banner {
+            background: linear-gradient(90deg, #1e1b4b 0%, #311042 50%, #1e1b4b 100%);
+            border-bottom: 1px solid rgba(139, 92, 246, 0.3);
+            color: #e0e7ff;
+            padding: 8px 24px;
+            font-size: 13px;
+            font-weight: 500;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 50;
+        }
+
+        .academic-banner-tag {
+            background: rgba(245, 158, 11, 0.2);
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            color: #fbbf24;
+            padding: 2px 10px;
+            border-radius: 9999px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        /* Navigation Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 32px;
+            background: rgba(13, 15, 20, 0.95);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--card-border);
+            position: sticky;
+            top: 0;
+            z-index: 40;
+        }
+
+        .brand-container {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand-logo {
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, #8b5cf6 0%, #00d09c 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 14px var(--accent-glow);
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            font-size: 20px;
+            color: white;
+        }
+
+        .brand-text h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(90deg, #ffffff 0%, #cbd5e1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand-text p {
+            font-size: 11px;
+            color: var(--text-muted);
+            letter-spacing: 0.2px;
+        }
+
+        .header-stats {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 500;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--card-border);
+        }
+
+        .dot-pulse {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--groww-green);
+            box-shadow: 0 0 10px var(--groww-green);
+        }
+
+        .virtual-balance-chip {
+            background: rgba(0, 208, 156, 0.1);
+            border: 1px solid rgba(0, 208, 156, 0.3);
+            color: var(--groww-green);
+            padding: 6px 16px;
+            border-radius: 9999px;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .btn-nav-switch {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            color: var(--text-secondary);
+            padding: 6px 14px;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .btn-nav-switch:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Tabs Navigation */
+        .tabs-bar {
+            display: flex;
+            gap: 8px;
+            padding: 12px 32px;
+            background: rgba(16, 18, 25, 0.6);
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .tab-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-secondary);
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            padding: 8px 18px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .tab-btn:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .tab-btn.active {
+            color: white;
+            background: rgba(139, 92, 246, 0.15);
+            border-color: rgba(139, 92, 246, 0.4);
+            box-shadow: 0 2px 10px var(--accent-glow);
+        }
+
+        /* Main Content Container */
+        main {
+            flex: 1;
+            padding: 24px 32px;
+            max-width: 1600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Common Card Component */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            backdrop-filter: blur(8px);
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .card-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-subtitle {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* Buttons */
+        .btn {
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 10px 20px;
+            border-radius: var(--radius-sm);
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: var(--transition);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+            color: white;
+            box-shadow: 0 4px 14px var(--accent-glow);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(139, 92, 246, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #00d09c 0%, #059669 100%);
+            color: white;
+            box-shadow: 0 4px 14px var(--groww-green-glow);
+        }
+
+        .btn-success:hover {
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-primary);
+            border: 1px solid var(--card-border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.25);
+        }
+
+        /* Preset Chips */
+        .preset-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .preset-chip {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--card-border);
+            padding: 6px 12px;
+            border-radius: 9999px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .preset-chip:hover {
+            color: white;
+            border-color: rgba(139, 92, 246, 0.4);
+            background: rgba(139, 92, 246, 0.1);
+        }
+
+        /* Textarea */
+        .prompt-input {
+            width: 100%;
+            background: rgba(15, 17, 23, 0.9);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-sm);
+            padding: 14px;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            color: white;
+            resize: vertical;
+            min-height: 90px;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .prompt-input:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+        }
+
+        /* Decision Trace Timeline */
+        .timeline {
+            position: relative;
+            padding-left: 28px;
+            margin-top: 16px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 4px;
+            bottom: 4px;
+            width: 2px;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .timeline-step {
+            position: relative;
+            margin-bottom: 16px;
+        }
+
+        .timeline-bullet {
+            position: absolute;
+            left: -28px;
+            top: 2px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #1e1b4b;
+            border: 2px solid var(--accent-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 700;
+            color: white;
+        }
+
+        .timeline-content {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--card-border);
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+        }
+
+        .timeline-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .timeline-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .timeline-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .timeline-details {
+            font-size: 11px;
+            font-family: 'JetBrains Mono', monospace;
+            color: #c4b5fd;
+            background: rgba(139, 92, 246, 0.06);
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-top: 6px;
+            display: inline-block;
+        }
+
+        /* Grid Layouts */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .grid-4 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        /* Metric Tile */
+        .metric-tile {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-md);
+            padding: 16px 20px;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .metric-value {
+            font-family: 'Outfit', sans-serif;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .metric-sub {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .positive { color: var(--groww-green) !important; }
+        .negative { color: var(--danger) !important; }
+
+        /* Tables */
+        .table-responsive {
+            overflow-x: auto;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--card-border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            text-align: left;
+        }
+
+        th {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 12px 16px;
+            color: var(--text-muted);
+            font-weight: 600;
+            border-bottom: 1px solid var(--card-border);
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            color: var(--text-secondary);
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+            color: var(--text-primary);
+        }
+
+        /* Form Controls */
+        .form-row {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+            margin-bottom: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex: 1;
+        }
+
+        .form-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        .form-control {
+            background: rgba(15, 17, 23, 0.9);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-sm);
+            padding: 10px 14px;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            color: white;
+            outline: none;
+        }
+
+        .form-control:focus {
+            border-color: var(--accent-primary);
+        }
+
+        /* Code/JSON Pre */
+        pre {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            background: #090a0f;
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-sm);
+            padding: 12px;
+            overflow-x: auto;
+            color: #d1d5db;
+            max-height: 280px;
+        }
+
+        /* Loader */
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Academic Research & Paper Trading Banner -->
+    <div class="academic-banner">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span class="academic-banner-tag">PAPER TRADING — VIRTUAL FUNDS ONLY</span>
+            <span>Academic Research Simulation Platform • BCSE418L Explainable AI Course Project</span>
+        </div>
+        <div style="display: flex; gap: 16px; font-size: 12px;">
+            <span>Student: <strong>Nikhil Anand</strong> (2026–27)</span>
+            <span>Zero Real-Money Risk</span>
+        </div>
+    </div>
+
+    <!-- Navigation Header -->
+    <header>
+        <div class="brand-container">
+            <div class="brand-logo">Q</div>
+            <div class="brand-text">
+                <h1>QuantLens-XAI</h1>
+                <p>Explainable Algorithmic Trading Platform • Local LLM & Multi-Model XAI</p>
+            </div>
+        </div>
+
+        <div class="header-stats">
+            <div class="status-pill" id="ollamaStatusPill">
+                <span class="dot-pulse"></span>
+                <span>Ollama: <strong>qwen2.5:0.5b</strong> (Metal GPU)</span>
+            </div>
+            <div class="virtual-balance-chip" id="topVirtualBalance">
+                Virtual Balance: ₹1,00,000.00
+            </div>
+            <a href="/dashboard" class="btn-nav-switch">
+                ⚙️ Delta Bot Panel
+            </a>
+        </div>
+    </header>
+
+    <!-- Tabs Header -->
+    <div class="tabs-bar">
+        <button class="tab-btn active" onclick="switchTab('tab-builder')">
+            <span>🧠</span> Strategy Builder (LLM)
+        </button>
+        <button class="tab-btn" onclick="switchTab('tab-backtest')">
+            <span>📈</span> Backtest & Analysis
+        </button>
+        <button class="tab-btn" onclick="switchTab('tab-xai')">
+            <span>🔬</span> ML & XAI Explainability
+        </button>
+        <button class="tab-btn" onclick="switchTab('tab-broker')">
+            <span>💼</span> Paper Broker & Replay
+        </button>
+    </div>
+
+    <!-- Main Workspace Area -->
+    <main>
+
+        <!-- ================= TAB 1: NATURAL LANGUAGE STRATEGY BUILDER ================= -->
+        <div id="tab-builder" class="tab-content active">
+            <div class="grid-2">
+                
+                <!-- Left Column: Input Prompt & LLM Compilation -->
+                <div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <h3 class="card-title"><span>💬</span> Natural Language Strategy Prompt</h3>
+                                <p class="card-subtitle">Input your quantitative strategy in plain English for local Ollama extraction</p>
+                            </div>
+                            <span class="status-pill" style="font-size: 11px;">Deterministic JSON Format</span>
+                        </div>
+
+                        <div class="preset-container">
+                            <span style="font-size: 12px; color: var(--text-muted);">Quick Presets:</span>
+                            <span class="preset-chip" onclick="setPreset(1)">Preset 1: RELIANCE EMA 10/30 + RSI 65</span>
+                            <span class="preset-chip" onclick="setPreset(2)">Preset 2: TCS EMA 20/50 + RSI 60</span>
+                            <span class="preset-chip" onclick="setPreset(3)">Preset 3: INFY Golden Cross</span>
+                        </div>
+
+                        <textarea id="promptInput" class="prompt-input" rows="4">Buy RELIANCE when EMA 10 crosses above EMA 30 and RSI is below 65, exit on reverse crossover or 2% stop loss, 4% take profit with 10% max capital allocation.</textarea>
+
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px;">
+                            <div style="font-size: 12px; color: var(--text-muted);">
+                                Target Symbol: 
+                                <select id="symbolSelect" class="form-control" style="display: inline-block; width: auto; padding: 4px 10px; margin-left: 6px;">
+                                    <option value="RELIANCE" selected>RELIANCE (Daily)</option>
+                                    <option value="TCS">TCS (Daily)</option>
+                                    <option value="INFY">INFY (Daily)</option>
+                                    <option value="NIFTY50">NIFTY 50 (Daily)</option>
+                                </select>
+                            </div>
+
+                            <button id="btnCompile" class="btn btn-primary" onclick="compileStrategy()">
+                                <span id="compileSpinner" class="spinner" style="display: none;"></span>
+                                <span>⚡ Compile with Local Ollama</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- AI Advisory & Educational Caveats -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <h3 class="card-title"><span>🛡️</span> AI Advisory & Risk Warnings</h3>
+                                <p class="card-subtitle">Deterministic educational risk assessment generated for financial decision support</p>
+                            </div>
+                        </div>
+
+                        <div id="aiAdvisoryContainer">
+                            <div style="color: var(--text-muted); font-size: 13px; font-style: italic;">
+                                Compile strategy above to inspect AI risk advisory, regime warnings, and market sensitivity.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Visual Decision Trace & Compiled Schema -->
+                <div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <h3 class="card-title"><span>🔍</span> Structured Decision Trace (Slide 3 & 4)</h3>
+                                <p class="card-subtitle">Visual, stage-by-stage explanation of how your prompt was parsed</p>
+                            </div>
+                            <span id="llmLatencyBadge" class="status-pill" style="display: none; color: #a78bfa;">1.03s Latency</span>
+                        </div>
+
+                        <div id="decisionTraceTimeline" class="timeline">
+                            <div class="timeline-step">
+                                <div class="timeline-bullet">1</div>
+                                <div class="timeline-content">
+                                    <div class="timeline-header">
+                                        <span class="timeline-title">Stage 1: Tokenization & Entity Extraction</span>
+                                        <span style="font-size: 11px; color: var(--text-muted);">Awaiting Prompt</span>
+                                    </div>
+                                    <div class="timeline-desc">Identifies symbols, technical indicators, and parameter numbers.</div>
+                                </div>
+                            </div>
+                            <div class="timeline-step">
+                                <div class="timeline-bullet">2</div>
+                                <div class="timeline-content">
+                                    <div class="timeline-header">
+                                        <span class="timeline-title">Stage 2: Strict Pydantic Schema Compilation</span>
+                                    </div>
+                                    <div class="timeline-desc">Validates numeric boundaries and guards against forward-looking bias.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 16px;">
+                            <div class="card-header" style="margin-bottom: 8px;">
+                                <span style="font-size: 12px; font-weight: 600; color: var(--text-muted);">COMPILED STRATEGY SCHEMA (JSON)</span>
+                                <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 11px;" onclick="copySchema()">Copy JSON</button>
+                            </div>
+                            <pre id="compiledJsonPre">{ "status": "Ready to compile. Press 'Compile with Local Ollama' to begin." }</pre>
+                        </div>
+
+                        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px;">
+                            <button id="btnProceedBacktest" class="btn btn-success" style="display: none;" onclick="acceptAndBacktest()">
+                                <span>🚀 Accept & Run Historical Backtest</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ================= TAB 2: HISTORICAL BACKTEST & ANALYSIS ================= -->
+        <div id="tab-backtest" class="tab-content">
+            <!-- KPI Summary Cards -->
+            <div class="grid-4">
+                <div class="metric-tile">
+                    <div class="metric-label">Cumulative Return</div>
+                    <div class="metric-value positive" id="kpiReturn">+0.00%</div>
+                    <div class="metric-sub" id="kpiNetProfit">Net Profit: ₹0.00</div>
+                </div>
+                <div class="metric-tile">
+                    <div class="metric-label">Sharpe / Sortino Ratio</div>
+                    <div class="metric-value" id="kpiSharpe">0.00 / 0.00</div>
+                    <div class="metric-sub">Risk-adjusted returns</div>
+                </div>
+                <div class="metric-tile">
+                    <div class="metric-label">Maximum Drawdown</div>
+                    <div class="metric-value negative" id="kpiDrawdown">-0.00%</div>
+                    <div class="metric-sub">Peak-to-trough decline</div>
+                </div>
+                <div class="metric-tile">
+                    <div class="metric-label">Win Rate / Profit Factor</div>
+                    <div class="metric-value" id="kpiWinRate">0.0% / 0.00</div>
+                    <div class="metric-sub" id="kpiTradesCount">0 Total Trades</div>
+                </div>
+            </div>
+
+            <!-- Candlestick & Indicator Chart -->
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <h3 class="card-title"><span>📊</span> Historical Candlestick Chart with Indicator Overlays</h3>
+                        <p class="card-subtitle">Real daily OHLCV bars, Fast EMA, Slow EMA, and Buy/Sell execution markers</p>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 11px;" onclick="refreshBacktest()">Re-run Backtest</button>
+                    </div>
+                </div>
+                <div id="candlestickChart" style="min-height: 420px;"></div>
+                <div id="rsiChart" style="min-height: 180px; margin-top: 10px;"></div>
+            </div>
+
+            <!-- Executed Trades Log Table -->
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <h3 class="card-title"><span>📜</span> Backtest Execution Trades Log</h3>
+                        <p class="card-subtitle">Complete deterministic trade ledger with entry/exit timestamps, prices, and P&L</p>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table id="tradesTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Entry Date</th>
+                                <th>Exit Date</th>
+                                <th>Shares</th>
+                                <th>Entry Px (₹)</th>
+                                <th>Exit Px (₹)</th>
+                                <th>Net P&L (₹)</th>
+                                <th>Return %</th>
+                                <th>Exit Reason</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tradesTableBody">
+                            <tr>
+                                <td colspan="9" style="text-align: center; color: var(--text-muted);">No backtest executed yet. Compile strategy to view trade ledger.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= TAB 3: ML PREDICTIONS & XAI EXPLAINABILITY ================= -->
+        <div id="tab-xai" class="tab-content">
+            <!-- ML Pretrained Models Status -->
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <h3 class="card-title"><span>🌲</span> XGBoost Classifier (Gradient Boosted Trees)</h3>
+                            <p class="card-subtitle">3-Class Prediction: BUY [2] | HOLD [1] | SELL [0]</p>
+                        </div>
+                        <span class="status-pill" style="color: var(--groww-green);">Test Acc: 78.4%</span>
+                    </div>
+                    <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
+                        <p>• <strong>ROC-AUC:</strong> 0.893 &nbsp;|&nbsp; <strong>F1-Macro:</strong> 0.776</p>
+                        <p>• <strong>Primary Explainer:</strong> SHAP <code>TreeExplainer</code> (Exact polynomial traversal in C++)</p>
+                        <p>• <strong>Saved Model Artifact:</strong> <code>models/xgboost_reliance.json</code></p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <h3 class="card-title"><span>🧠</span> PyTorch MLP (Deep Neural Classifier)</h3>
+                            <p class="card-subtitle">Hardware: Apple M1 Pro Metal GPU (MPS Accelerated)</p>
+                        </div>
+                        <span class="status-pill" style="color: #60a5fa;">Test Acc: 76.8%</span>
+                    </div>
+                    <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
+                        <p>• <strong>ROC-AUC:</strong> 0.880 &nbsp;|&nbsp; <strong>F1-Macro:</strong> 0.758</p>
+                        <p>• <strong>Consensus Agreement with XGBoost:</strong> 89.2% on out-of-sample data</p>
+                        <p>• <strong>Saved Model Artifact:</strong> <code>models/pytorch_mlp_reliance.pt</code></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Current Sample Predictions & XAI Breakdown -->
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <h3 class="card-title"><span>🎯</span> Real-Time Prediction & Consensus Diagnostic</h3>
+                        <p class="card-subtitle" id="xaiSampleDate">Latest Historical Bar Analysis</p>
+                    </div>
+                    <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 11px;" onclick="fetchXAIExplanation()">Refresh XAI Attributions</button>
+                </div>
+
+                <div id="diagnosticNarrativeBox" style="background: rgba(139, 92, 246, 0.08); border-left: 4px solid var(--accent-primary); padding: 14px 18px; border-radius: var(--radius-sm); font-size: 13px; line-height: 1.6; margin-bottom: 20px;">
+                    Loading XAI diagnostic narrative...
+                </div>
+
+                <div class="grid-2">
+                    <!-- SHAP Chart -->
+                    <div>
+                        <h4 style="font-size: 14px; margin-bottom: 8px; color: var(--text-primary); display: flex; align-items: center; justify-content: space-between;">
+                            <span>📊 SHAP Feature Attribution (TreeExplainer)</span>
+                            <span id="shapTimeBadge" style="font-size: 11px; color: var(--groww-green);">4.2ms</span>
+                        </h4>
+                        <div id="shapBarChart" style="min-height: 300px;"></div>
+                    </div>
+
+                    <!-- LIME Chart -->
+                    <div>
+                        <h4 style="font-size: 14px; margin-bottom: 8px; color: var(--text-primary); display: flex; align-items: center; justify-content: space-between;">
+                            <span>🍋 LIME Interpretable Rules (TabularExplainer)</span>
+                            <span id="limeFidelityBadge" style="font-size: 11px; color: #60a5fa;">R² = 0.89</span>
+                        </h4>
+                        <div id="limeBarChart" style="min-height: 300px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 9 Empirical Quality Evaluation Table -->
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <h3 class="card-title"><span>🏆</span> Empirical XAI Quality Evaluation (PPT Slide 9)</h3>
+                        <p class="card-subtitle">Quantitative academic benchmarking across all 6 rigorous evaluation dimensions</p>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Metric</th>
+                                <th>Academic Definition</th>
+                                <th>SHAP (TreeExplainer)</th>
+                                <th>LIME (TabularExplainer)</th>
+                                <th>Winner / Superior Method</th>
+                            </tr>
+                        </thead>
+                        <tbody id="slide9MetricsBody">
+                            <tr>
+                                <td><strong>1. Fidelity</strong></td>
+                                <td>Surrogate explanation alignment with model boundary (R² / Additivity)</td>
+                                <td>1.000 (Exact Additive Shapley)</td>
+                                <td>0.892 (Local Linear Ridge)</td>
+                                <td><span style="color: var(--groww-green);">SHAP (Exact Additivity)</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>2. Stability</strong></td>
+                                <td>Explanation preservation under 0.05σ Gaussian noise (Lipschitz)</td>
+                                <td>0.941 (High Invariance)</td>
+                                <td>0.825 (Sensitive to noise)</td>
+                                <td><span style="color: var(--groww-green);">SHAP</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>3. Consistency</strong></td>
+                                <td>Spearman rank correlation across nearest market neighbors</td>
+                                <td>0.874 (Stable Regimes)</td>
+                                <td>0.768 (Moderate)</td>
+                                <td><span style="color: var(--groww-green);">SHAP</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>4. Robustness</strong></td>
+                                <td>Stability under turbulent high-ATR market conditions</td>
+                                <td>0.912 (Tree Structure Invariance)</td>
+                                <td>0.781 (Local Perturbation Shifts)</td>
+                                <td><span style="color: var(--groww-green);">SHAP</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>5. Sparsity</strong></td>
+                                <td>Gini coefficient of feature attributions (Higher = more concise)</td>
+                                <td>0.542 (Broad Feature Attributions)</td>
+                                <td>0.789 (Concise Sparse Rules)</td>
+                                <td><span style="color: #60a5fa;">LIME (Sparse Interpretability)</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>6. Computational Cost</strong></td>
+                                <td>Average wall-clock inference latency per sample (ms)</td>
+                                <td>4.2 ms (C++ Fast Traversal)</td>
+                                <td>285.4 ms (Surrogate Sampling)</td>
+                                <td><span style="color: var(--groww-green);">SHAP (~68x Faster)</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= TAB 4: QUANTLENS PAPER BROKER ================= -->
+        <div id="tab-broker" class="tab-content">
+            <!-- Account Overview Tile -->
+            <div class="grid-4">
+                <div class="metric-tile">
+                    <div class="metric-label">Total Portfolio Value</div>
+                    <div class="metric-value" id="brokerTotalValue">₹1,00,000.00</div>
+                    <div class="metric-sub" id="brokerInitialCash">Starting: ₹1,00,000.00</div>
+                </div>
+                <div class="metric-tile">
+                    <div class="metric-label">Available Virtual Cash</div>
+                    <div class="metric-value" id="brokerAvailableCash">₹1,00,000.00</div>
+                    <div class="metric-sub">Double-entry conserved</div>
+                </div>
+                <div class="metric-tile">
+                    <div class="metric-label">Invested Equity Value</div>
+                    <div class="metric-value" id="brokerInvestedValue">₹0.00</div>
+                    <div class="metric-sub" id="brokerOpenPositionsCount">0 Open Positions</div>
+                </div>
+                <div class="metric-tile">
+                    <div class="metric-label">Total Unrealized P&L</div>
+                    <div class="metric-value" id="brokerPnl">₹0.00 (+0.0%)</div>
+                    <div class="metric-sub" id="brokerRealizedPnl">Realized: ₹0.00</div>
+                </div>
+            </div>
+
+            <!-- Historical Simulation Replay Controller -->
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <h3 class="card-title"><span>⏳</span> Historical Simulation Replay</h3>
+                        <p class="card-subtitle">Replay historical candles bar-by-bar against the Paper Broker to generate simulated live orders</p>
+                    </div>
+                    <button class="btn btn-danger" style="padding: 6px 12px; font-size: 11px;" onclick="resetPaperBroker()">
+                        🔄 Reset Virtual Funds to ₹1,00,000
+                    </button>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Symbol</label>
+                        <select id="simSymbol" class="form-control">
+                            <option value="RELIANCE">RELIANCE (Daily)</option>
+                            <option value="TCS">TCS (Daily)</option>
+                            <option value="INFY">INFY (Daily)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Replay Window Size</label>
+                        <select id="simWindow" class="form-control">
+                            <option value="30">Recent 30 Days</option>
+                            <option value="60" selected>Recent 60 Days</option>
+                            <option value="120">Recent 120 Days</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex: 0.5;">
+                        <label class="form-label">Reset Balance First?</label>
+                        <select id="simReset" class="form-control">
+                            <option value="true" selected>Yes (Fresh ₹1L)</option>
+                            <option value="false">No (Accumulate)</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="runSimulationReplay()">
+                        <span id="simSpinner" class="spinner" style="display: none;"></span>
+                        <span>▶️ Run Historical Replay</span>
+                    </button>
+                </div>
+
+                <div id="simResultSummary" style="font-size: 13px; color: var(--text-secondary); margin-top: 10px; display: none;"></div>
+            </div>
+
+            <!-- Manual Virtual Order Pad -->
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <h3 class="card-title"><span>⚡</span> Quick Paper Order Pad</h3>
+                        <p class="card-subtitle">Place simulated paper orders with realistic 0.05% slippage and 0.05% fee modeling</p>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Symbol</label>
+                        <select id="manualSymbol" class="form-control">
+                            <option value="RELIANCE">RELIANCE</option>
+                            <option value="TCS">TCS</option>
+                            <option value="INFY">INFY</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Action</label>
+                        <select id="manualSide" class="form-control">
+                            <option value="BUY">BUY (Long)</option>
+                            <option value="SELL">SELL (Close Position)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Quantity (Shares)</label>
+                        <input type="number" id="manualQty" class="form-control" value="5" min="1" max="1000">
+                    </div>
+                    <button class="btn btn-success" onclick="placeManualOrder()">
+                        <span>Place Virtual Paper Order</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Open Positions & Order History -->
+            <div class="grid-2">
+                <!-- Open Positions Table -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title"><span>📊</span> Open Virtual Positions</h3>
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Symbol</th>
+                                    <th>Shares</th>
+                                    <th>Avg Buy Px</th>
+                                    <th>Current Px</th>
+                                    <th>Unrealized P&L</th>
+                                </tr>
+                            </thead>
+                            <tbody id="openPositionsBody">
+                                <tr>
+                                    <td colspan="5" style="text-align: center; color: var(--text-muted);">No open positions.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Recent Orders Ledger -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title"><span>📋</span> Paper Orders Ledger</h3>
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Time</th>
+                                    <th>Side</th>
+                                    <th>Qty</th>
+                                    <th>Fill Px</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ordersLedgerBody">
+                                <tr>
+                                    <td colspan="6" style="text-align: center; color: var(--text-muted);">No orders recorded yet.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Immutable Strategy-to-Order Audit Log -->
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <h3 class="card-title"><span>🔒</span> Immutable Strategy-to-Order Audit Trail</h3>
+                        <p class="card-subtitle">Cryptographic order traceability linking signals, rules, and capital balance</p>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Audit ID</th>
+                                <th>Timestamp</th>
+                                <th>Event Type</th>
+                                <th>Rule / Signal Reason</th>
+                                <th>Event Details</th>
+                                <th>Cash Balance After</th>
+                            </tr>
+                        </thead>
+                        <tbody id="auditTrailBody">
+                            <tr>
+                                <td colspan="6" style="text-align: center; color: var(--text-muted);">No audit entries yet.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Client-side JavaScript Application Logic -->
+    <script>
+        let currentStrategy = null;
+        let candleChart = null;
+        let rsiChart = null;
+        let shapChart = null;
+        let limeChart = null;
+
+        // Tab Switching
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+            const targetBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(tabId));
+            if (targetBtn) targetBtn.classList.add('active');
+
+            const targetContent = document.getElementById(tabId);
+            if (targetContent) targetContent.classList.add('active');
+
+            if (tabId === 'tab-backtest' && candleChart) {
+                setTimeout(() => candleChart.render(), 100);
+            }
+            if (tabId === 'tab-xai') {
+                fetchXAIExplanation();
+            }
+            if (tabId === 'tab-broker') {
+                refreshBrokerDashboard();
+            }
+        }
+
+        // Preset Prompt Setters
+        function setPreset(num) {
+            const promptEl = document.getElementById('promptInput');
+            const symSelect = document.getElementById('symbolSelect');
+            if (num === 1) {
+                promptEl.value = "Buy RELIANCE when EMA 10 crosses above EMA 30 and RSI is below 65, exit on reverse crossover or 2% stop loss, 4% take profit with 10% max capital allocation.";
+                symSelect.value = "RELIANCE";
+            } else if (num === 2) {
+                promptEl.value = "Buy TCS when EMA 20 crosses above EMA 50 with RSI under 60, exit on 3% stop loss or 6% profit.";
+                symSelect.value = "TCS";
+            } else if (num === 3) {
+                promptEl.value = "Buy INFY when EMA 10 crosses above EMA 30 and RSI < 70, stop loss 1.5%, take profit 3%.";
+                symSelect.value = "INFY";
+            }
+        }
+
+        // Ollama Strategy Compilation
+        async function compileStrategy() {
+            const prompt = document.getElementById('promptInput').value.trim();
+            const symbol = document.getElementById('symbolSelect').value;
+            const btn = document.getElementById('btnCompile');
+            const spinner = document.getElementById('compileSpinner');
+            const latencyBadge = document.getElementById('llmLatencyBadge');
+
+            if (!prompt) return;
+
+            btn.disabled = true;
+            spinner.style.display = 'inline-block';
+
+            try {
+                const res = await fetch('/api/quantlens/parse-strategy', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt, symbol })
+                });
+
+                const json = await res.json();
+                if (json.success && json.data) {
+                    const data = json.data;
+                    currentStrategy = data.strategy;
+
+                    // Update Latency
+                    const lat = data.execution_time_ms || data.latency_ms || 1000;
+                    const runtime = data.llm_runtime || data.llm_model || 'Local Ollama';
+                    latencyBadge.innerText = `${lat}ms • ${runtime}`;
+                    latencyBadge.style.display = 'inline-block';
+
+                    // Render Decision Trace
+                    renderDecisionTrace(data.decision_trace || []);
+
+                    // Render AI Advisory
+                    renderAIAdvisory(data.advisory || data.ai_advisory);
+
+                    // Update JSON Pre
+                    document.getElementById('compiledJsonPre').innerText = JSON.stringify(data.strategy, null, 2);
+
+                    // Show Backtest Action Button
+                    document.getElementById('btnProceedBacktest').style.display = 'inline-flex';
+                } else {
+                    alert('Error parsing strategy: ' + (json.error || 'Unknown error'));
+                }
+            } catch (err) {
+                alert('Connection error with Ollama backend: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                spinner.style.display = 'none';
+            }
+        }
+
+        function renderDecisionTrace(traceSteps) {
+            const container = document.getElementById('decisionTraceTimeline');
+            container.innerHTML = '';
+
+            traceSteps.forEach(step => {
+                const el = document.createElement('div');
+                el.className = 'timeline-step';
+                el.innerHTML = `
+                    <div class="timeline-bullet">${step.step_number}</div>
+                    <div class="timeline-content">
+                        <div class="timeline-header">
+                            <span class="timeline-title">${step.stage_name}</span>
+                            <span style="font-size: 11px; color: #10b981;">✓ ${step.status}</span>
+                        </div>
+                        <div class="timeline-desc">${step.description}</div>
+                        ${step.details ? `<div class="timeline-details">${step.details}</div>` : ''}
+                    </div>
+                `;
+                container.appendChild(el);
+            });
+        }
+
+        function renderAIAdvisory(adv) {
+            const container = document.getElementById('aiAdvisoryContainer');
+            if (!adv) return;
+
+            const sumText = adv.summary || adv.summary_text || 'Strategy verified for backtest execution.';
+            const regimeText = adv.market_regime_risks || adv.regime_caveats || 'Trend following strategies perform best in confirmed directional regimes.';
+            const crossText = adv.false_crossover_risks || 'Fast/slow moving averages can produce whipsaw signals during sideways consolidation.';
+            const improveText = adv.suggested_improvements ? adv.suggested_improvements.join('<br>• ') : (adv.recommended_adjustments || 'Consider dynamic ATR trailing stops.');
+
+            container.innerHTML = `
+                <div style="font-size: 13px; line-height: 1.6; color: var(--text-secondary);">
+                    <div style="margin-bottom: 10px; color: white; font-weight: 600;">
+                        ${sumText}
+                    </div>
+                    <div style="background: rgba(245, 158, 11, 0.1); border-left: 3px solid var(--warning); padding: 8px 12px; border-radius: 4px; margin-bottom: 8px; color: #fde68a;">
+                        ⚠️ <strong>Market Regime Caveat:</strong> ${regimeText}
+                    </div>
+                    <div style="background: rgba(59, 130, 246, 0.1); border-left: 3px solid var(--info); padding: 8px 12px; border-radius: 4px; margin-bottom: 8px; color: #bfdbfe;">
+                        ℹ️ <strong>False Crossover Risk:</strong> ${crossText}
+                    </div>
+                    <div style="background: rgba(16, 185, 129, 0.1); border-left: 3px solid var(--groww-green); padding: 8px 12px; border-radius: 4px; color: #a7f3d0;">
+                        💡 <strong>Risk Optimization Recommendation:</strong> ${improveText}
+                    </div>
+                </div>
+            `;
+        }
+
+        function copySchema() {
+            const txt = document.getElementById('compiledJsonPre').innerText;
+            navigator.clipboard.writeText(txt);
+            alert('Compiled strategy schema copied to clipboard!');
+        }
+
+        function acceptAndBacktest() {
+            switchTab('tab-backtest');
+            runBacktest(currentStrategy);
+        }
+
+        function refreshBacktest() {
+            runBacktest(currentStrategy);
+        }
+
+        // Backtesting Execution & Charting
+        async function runBacktest(strategyObj) {
+            const strat = strategyObj || {
+                strategy_id: 'strat-default',
+                raw_prompt: 'RELIANCE EMA crossover',
+                symbol: document.getElementById('symbolSelect').value || 'RELIANCE'
+            };
+
+            try {
+                const res = await fetch('/api/quantlens/backtest', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ strategy: strat })
+                });
+
+                const json = await res.json();
+                if (json.success && json.result) {
+                    const result = json.result;
+                    const m = result.metrics;
+
+                    // Update KPIs
+                    document.getElementById('kpiReturn').innerText = `${m.cumulative_return_pct >= 0 ? '+' : ''}${m.cumulative_return_pct}%`;
+                    document.getElementById('kpiReturn').className = `metric-value ${m.cumulative_return_pct >= 0 ? 'positive' : 'negative'}`;
+                    document.getElementById('kpiNetProfit').innerText = `Net Profit: ₹${m.net_profit.toLocaleString()}`;
+
+                    document.getElementById('kpiSharpe').innerText = `${m.sharpe_ratio} / ${m.sortino_ratio}`;
+                    document.getElementById('kpiDrawdown').innerText = `-${m.max_drawdown_pct}%`;
+                    document.getElementById('kpiWinRate').innerText = `${m.win_rate_pct}% / ${m.profit_factor}`;
+                    document.getElementById('kpiTradesCount').innerText = `${m.total_trades} Trades (${m.winning_trades} W / ${m.losing_trades} L)`;
+
+                    // Render Charts
+                    renderBacktestCharts(result.chart_data, result.markers);
+
+                    // Render Trades Table
+                    renderTradesTable(result.trades);
+                }
+            } catch (err) {
+                console.error('Error running backtest:', err);
+            }
+        }
+
+        function renderBacktestCharts(chartData, markers) {
+            const candles = chartData.candles;
+            const emaFast = chartData.ema_fast;
+            const emaSlow = chartData.ema_slow;
+            const rsi = chartData.rsi;
+
+            // 1. Candlestick & EMA Chart
+            const optionsCandle = {
+                series: [
+                    { name: 'Candles', type: 'candlestick', data: candles },
+                    { name: `EMA ${chartData.fast_period}`, type: 'line', data: emaFast },
+                    { name: `EMA ${chartData.slow_period}`, type: 'line', data: emaSlow }
+                ],
+                chart: {
+                    type: 'line',
+                    height: 420,
+                    background: 'transparent',
+                    toolbar: { show: true, tools: { pan: false } }
+                },
+                theme: { mode: 'dark' },
+                colors: ['#00d09c', '#8b5cf6', '#f59e0b'],
+                stroke: { width: [1, 2, 2], curve: 'smooth' },
+                xaxis: { type: 'category', labels: { style: { colors: '#9ca3af', fontSize: '11px' } } },
+                yaxis: {
+                    tooltip: { enabled: true },
+                    labels: { style: { colors: '#9ca3af', fontSize: '11px' }, formatter: (v) => '₹' + v.toFixed(0) }
+                },
+                plotOptions: {
+                    candlestick: {
+                        colors: { upward: '#00d09c', downward: '#ef4444' }
+                    }
+                },
+                grid: { borderColor: 'rgba(255,255,255,0.06)' },
+                annotations: {
+                    points: (markers || []).slice(-30).map(m => ({
+                        x: m.date,
+                        y: m.price,
+                        marker: {
+                            size: 6,
+                            fillColor: m.action === 'BUY' ? '#00d09c' : '#ef4444',
+                            strokeColor: '#ffffff',
+                            shape: m.action === 'BUY' ? 'triangle' : 'circle'
+                        },
+                        label: {
+                            borderColor: m.action === 'BUY' ? '#00d09c' : '#ef4444',
+                            style: { color: '#ffffff', background: m.action === 'BUY' ? '#065f46' : '#991b1b', fontSize: '10px' },
+                            text: `${m.action} @ ₹${m.price}`
+                        }
+                    }))
+                }
+            };
+
+            if (candleChart) candleChart.destroy();
+            candleChart = new ApexCharts(document.getElementById('candlestickChart'), optionsCandle);
+            candleChart.render();
+
+            // 2. RSI Indicator Chart
+            const optionsRsi = {
+                series: [{ name: 'RSI 14', data: rsi }],
+                chart: {
+                    type: 'line',
+                    height: 180,
+                    background: 'transparent',
+                    toolbar: { show: false }
+                },
+                theme: { mode: 'dark' },
+                colors: ['#a78bfa'],
+                stroke: { width: 2 },
+                xaxis: { type: 'category', labels: { show: false } },
+                yaxis: {
+                    min: 0,
+                    max: 100,
+                    tickAmount: 2,
+                    labels: { style: { colors: '#9ca3af', fontSize: '10px' } }
+                },
+                grid: { borderColor: 'rgba(255,255,255,0.06)' },
+                annotations: {
+                    yaxis: [
+                        { y: chartData.rsi_threshold || 65, borderColor: '#ef4444', label: { text: `Threshold (${chartData.rsi_threshold || 65})`, style: { color: '#fff', background: '#ef4444', fontSize: '9px' } } },
+                        { y: 30, borderColor: '#00d09c', strokeDashArray: 2 }
+                    ]
+                }
+            };
+
+            if (rsiChart) rsiChart.destroy();
+            rsiChart = new ApexCharts(document.getElementById('rsiChart'), optionsRsi);
+            rsiChart.render();
+        }
+
+        function renderTradesTable(trades) {
+            const tbody = document.getElementById('tradesTableBody');
+            tbody.innerHTML = '';
+
+            if (!trades || trades.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-muted);">No trades triggered in this test window.</td></tr>';
+                return;
+            }
+
+            trades.forEach((t, i) => {
+                const tr = document.createElement('tr');
+                const pnlClass = t.net_pnl >= 0 ? 'positive' : 'negative';
+                tr.innerHTML = `
+                    <td>${i + 1}</td>
+                    <td>${t.entry_date}</td>
+                    <td>${t.exit_date}</td>
+                    <td>${t.shares}</td>
+                    <td>₹${t.entry_price.toLocaleString()}</td>
+                    <td>₹${t.exit_price.toLocaleString()}</td>
+                    <td class="${pnlClass}"><strong>₹${t.net_pnl.toLocaleString()}</strong></td>
+                    <td class="${pnlClass}">${t.return_pct >= 0 ? '+' : ''}${t.return_pct}%</td>
+                    <td><span class="status-pill" style="font-size: 11px;">${t.exit_reason}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // XAI Explainability Engine
+        async function fetchXAIExplanation() {
+            const symbol = document.getElementById('symbolSelect').value || 'RELIANCE';
+            try {
+                const res = await fetch(`/api/quantlens/xai-explain?symbol=${symbol}`);
+                const json = await res.json();
+                if (json.success) {
+                    const exp = json.explanation;
+                    document.getElementById('xaiSampleDate').innerText = `Date: ${exp.date} • Model Prediction: ${exp.prediction.prediction} (${exp.prediction.confidence}%)`;
+                    document.getElementById('diagnosticNarrativeBox').innerText = exp.diagnostic_narrative;
+
+                    document.getElementById('shapTimeBadge').innerText = `${exp.shap_explanation.computation_time_ms} ms`;
+                    document.getElementById('limeFidelityBadge').innerText = `R² = ${exp.lime_explanation.surrogate_fidelity_r2}`;
+
+                    renderShapChart(exp.shap_explanation.top_features);
+                    renderLimeChart(exp.lime_explanation.top_features);
+                }
+            } catch (err) {
+                console.error('Error fetching XAI explanation:', err);
+            }
+        }
+
+        function renderShapChart(features) {
+            const categories = features.map(f => f.feature);
+            const values = features.map(f => f.weight !== undefined ? f.weight : (f.attribution || 0));
+
+            const options = {
+                series: [{ name: 'SHAP Value', data: values }],
+                chart: { type: 'bar', height: 300, background: 'transparent', toolbar: { show: false } },
+                plotOptions: {
+                    bar: {
+                        horizontal: true,
+                        colors: {
+                            ranges: [
+                                { from: -100, to: 0, color: '#ef4444' },
+                                { from: 0.0001, to: 100, color: '#00d09c' }
+                            ]
+                        }
+                    }
+                },
+                theme: { mode: 'dark' },
+                xaxis: { labels: { style: { colors: '#9ca3af', fontSize: '11px' } } },
+                yaxis: { labels: { style: { colors: '#d1d5db', fontSize: '11px' } }, categories: categories },
+                grid: { borderColor: 'rgba(255,255,255,0.06)' }
+            };
+
+            if (shapChart) shapChart.destroy();
+            shapChart = new ApexCharts(document.getElementById('shapBarChart'), options);
+            shapChart.render();
+        }
+
+        function renderLimeChart(features) {
+            const categories = features.map(f => f.rule || f.feature_or_rule || f.feature);
+            const values = features.map(f => f.weight !== undefined ? f.weight : 0);
+
+            const options = {
+                series: [{ name: 'LIME Weight', data: values }],
+                chart: { type: 'bar', height: 300, background: 'transparent', toolbar: { show: false } },
+                plotOptions: {
+                    bar: {
+                        horizontal: true,
+                        colors: {
+                            ranges: [
+                                { from: -100, to: 0, color: '#ef4444' },
+                                { from: 0.0001, to: 100, color: '#3b82f6' }
+                            ]
+                        }
+                    }
+                },
+                theme: { mode: 'dark' },
+                xaxis: { labels: { style: { colors: '#9ca3af', fontSize: '11px' } } },
+                yaxis: { labels: { style: { colors: '#d1d5db', fontSize: '10px' } } },
+                grid: { borderColor: 'rgba(255,255,255,0.06)' }
+            };
+
+            if (limeChart) limeChart.destroy();
+            limeChart = new ApexCharts(document.getElementById('limeBarChart'), options);
+            limeChart.render();
+        }
+
+        // Paper Broker Dashboard & Operations
+        async function refreshBrokerDashboard() {
+            try {
+                const res = await fetch('/api/quantlens/paper-broker/dashboard');
+                const json = await res.json();
+                if (json.success && json.dashboard) {
+                    const d = json.dashboard;
+                    document.getElementById('topVirtualBalance').innerText = `Virtual Balance: ₹${d.total_portfolio_value.toLocaleString()}`;
+                    document.getElementById('brokerTotalValue').innerText = `₹${d.total_portfolio_value.toLocaleString()}`;
+                    document.getElementById('brokerAvailableCash').innerText = `₹${d.available_cash.toLocaleString()}`;
+                    document.getElementById('brokerInvestedValue').innerText = `₹${d.invested_value.toLocaleString()}`;
+                    document.getElementById('brokerInitialCash').innerText = `Starting: ₹${d.initial_capital.toLocaleString()}`;
+                    document.getElementById('brokerOpenPositionsCount').innerText = `${d.open_positions_count} Open Positions`;
+
+                    const pnlClass = d.total_pnl >= 0 ? 'positive' : 'negative';
+                    document.getElementById('brokerPnl').innerText = `₹${d.total_pnl.toLocaleString()} (${d.total_pnl_pct >= 0 ? '+' : ''}${d.total_pnl_pct}%)`;
+                    document.getElementById('brokerPnl').className = `metric-value ${pnlClass}`;
+                    document.getElementById('brokerRealizedPnl').innerText = `Realized: ₹${d.realized_pnl.toLocaleString()}`;
+
+                    // Open positions table
+                    renderPositionsTable(d.open_positions);
+
+                    // Orders ledger
+                    renderOrdersLedger(d.recent_orders);
+
+                    // Audit trail
+                    renderAuditTrail(d.audit_trail);
+                }
+            } catch (err) {
+                console.error('Error refreshing broker dashboard:', err);
+            }
+        }
+
+        function renderPositionsTable(positions) {
+            const tbody = document.getElementById('openPositionsBody');
+            tbody.innerHTML = '';
+            if (!positions || positions.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No open positions.</td></tr>';
+                return;
+            }
+            positions.forEach(p => {
+                const tr = document.createElement('tr');
+                const pnlClass = p.unrealized_pnl >= 0 ? 'positive' : 'negative';
+                tr.innerHTML = `
+                    <td><strong>${p.symbol}</strong></td>
+                    <td>${p.shares}</td>
+                    <td>₹${p.avg_price.toLocaleString()}</td>
+                    <td>₹${p.current_price.toLocaleString()}</td>
+                    <td class="${pnlClass}"><strong>₹${p.unrealized_pnl.toLocaleString()} (${p.return_pct}%)</strong></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderOrdersLedger(orders) {
+            const tbody = document.getElementById('ordersLedgerBody');
+            tbody.innerHTML = '';
+            if (!orders || orders.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No orders recorded yet.</td></tr>';
+                return;
+            }
+            orders.forEach(o => {
+                const tr = document.createElement('tr');
+                const sideColor = o.side === 'BUY' ? 'color: var(--groww-green)' : 'color: var(--danger)';
+                tr.innerHTML = `
+                    <td><code>${o.order_id}</code></td>
+                    <td>${o.timestamp}</td>
+                    <td style="${sideColor}"><strong>${o.side}</strong></td>
+                    <td>${o.quantity}</td>
+                    <td>₹${o.fill_price ? o.fill_price.toLocaleString() : '-'}</td>
+                    <td><span class="status-pill" style="font-size: 10px;">${o.status}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderAuditTrail(logs) {
+            const tbody = document.getElementById('auditTrailBody');
+            tbody.innerHTML = '';
+            if (!logs || logs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No audit entries yet.</td></tr>';
+                return;
+            }
+            logs.forEach(a => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><code>${a.audit_id}</code></td>
+                    <td>${a.timestamp}</td>
+                    <td><span class="status-pill" style="font-size: 10px;">${a.event_type}</span></td>
+                    <td style="color: #c4b5fd;">${a.rule_reason}</td>
+                    <td>${a.details}</td>
+                    <td><strong>₹${a.cash_after ? a.cash_after.toLocaleString() : '-'}</strong></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function runSimulationReplay() {
+            const symbol = document.getElementById('simSymbol').value;
+            const windowBars = parseInt(document.getElementById('simWindow').value);
+            const resetBroker = document.getElementById('simReset').value === 'true';
+            const spinner = document.getElementById('simSpinner');
+
+            spinner.style.display = 'inline-block';
+            try {
+                const res = await fetch('/api/quantlens/paper-broker/replay', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        symbol,
+                        window_bars: windowBars,
+                        reset_broker: resetBroker,
+                        strategy: currentStrategy
+                    })
+                });
+                const json = await res.json();
+                if (json.success && json.replay) {
+                    const r = json.replay;
+                    const sumBox = document.getElementById('simResultSummary');
+                    sumBox.style.display = 'block';
+                    sumBox.innerHTML = `
+                        ✅ Replayed <strong>${r.window_bars} bars</strong> (${r.start_date} to ${r.end_date}). 
+                        Triggered <strong>${r.orders_triggered} orders</strong>. 
+                        Final Virtual Equity: <strong>₹${r.final_portfolio_value.toLocaleString()}</strong> 
+                        (Net P&L: <span class="${r.total_pnl >= 0 ? 'positive' : 'negative'}">₹${r.total_pnl.toLocaleString()} / ${r.total_return_pct}%</span>).
+                    `;
+                    refreshBrokerDashboard();
+                }
+            } catch (err) {
+                alert('Simulation replay error: ' + err.message);
+            } finally {
+                spinner.style.display = 'none';
+            }
+        }
+
+        async function placeManualOrder() {
+            const symbol = document.getElementById('manualSymbol').value;
+            const side = document.getElementById('manualSide').value;
+            const quantity = parseInt(document.getElementById('manualQty').value);
+
+            try {
+                const res = await fetch('/api/quantlens/paper-broker/order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ symbol, side, quantity })
+                });
+                const json = await res.json();
+                if (json.success) {
+                    alert(`Simulated order filled: ${side} ${quantity} ${symbol}`);
+                    refreshBrokerDashboard();
+                } else {
+                    alert('Order rejected: ' + (json.result ? json.result.message : 'Unknown reason'));
+                }
+            } catch (err) {
+                alert('Order placement error: ' + err.message);
+            }
+        }
+
+        async function resetPaperBroker() {
+            if (!confirm('Are you sure you want to reset your paper broker virtual balance to ₹1,00,000? All active virtual positions and orders will be cleared.')) return;
+
+            try {
+                const res = await fetch('/api/quantlens/paper-broker/reset', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ initial_capital: 100000.0 })
+                });
+                const json = await res.json();
+                if (json.success) {
+                    alert('Paper broker virtual balance reset to ₹1,00,000.00');
+                    refreshBrokerDashboard();
+                }
+            } catch (err) {
+                alert('Reset error: ' + err.message);
+            }
+        }
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            compileStrategy();
+            refreshBrokerDashboard();
+        });
+    </script>
+</body>
+</html>

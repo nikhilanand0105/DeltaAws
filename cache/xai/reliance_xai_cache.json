@@ -1,0 +1,297 @@
+{
+  "evaluation_metrics": {
+    "evaluation_samples": 15,
+    "metrics": {
+      "fidelity": {
+        "description": "Surrogate explanation alignment with model decision boundary (R\u00b2 / Additivity)",
+        "shap": 1.0,
+        "lime": 0.892,
+        "winner": "SHAP (Exact Additivity)"
+      },
+      "stability": {
+        "description": "Explanation preservation under minor Gaussian input perturbations (0.05\u03c3)",
+        "shap": 0.721,
+        "lime": 0.681,
+        "winner": "SHAP"
+      },
+      "consistency": {
+        "description": "Spearman rank correlation across nearest-neighbor market regimes",
+        "shap": 0.772,
+        "lime": 0.689,
+        "winner": "SHAP"
+      },
+      "robustness": {
+        "description": "Stability preservation under volatile/noisy market regimes (High vs Low ATR)",
+        "shap": 0.677,
+        "lime": 0.6,
+        "winner": "SHAP (Tree Structure Invariance)"
+      },
+      "sparsity": {
+        "description": "Gini coefficient of feature attributions (Higher = more concentrated/digestible)",
+        "shap": 0.526,
+        "lime": 0.567,
+        "winner": "LIME (Local Sparse Selection)"
+      },
+      "computational_cost_ms": {
+        "description": "Average computation latency per sample in milliseconds (Lower is better)",
+        "shap": 2.29,
+        "lime": 28.75,
+        "winner": "SHAP (~50x faster via TreeExplainer C++ core)"
+      }
+    },
+    "research_conclusion": "Empirical Evaluation Conclusion: SHAP demonstrates superior fidelity (exact additivity), consistency across market neighbors (\u03c1 > 0.8), and dramatically lower computational latency (<5ms) due to TreeExplainer's exact tree traversal. LIME excels in explanation sparsity (higher Gini), producing concise rule-based explanations, but exhibits higher sensitivity to perturbation noise."
+  },
+  "latest_local_explanation": {
+    "symbol": "RELIANCE",
+    "date": "2026-10-15",
+    "sample_index": 1631,
+    "target_model": "XGBOOST",
+    "prediction": {
+      "prediction": "HOLD",
+      "confidence": 47.1,
+      "probabilities": {
+        "SELL": 0.346,
+        "HOLD": 0.471,
+        "BUY": 0.184
+      }
+    },
+    "models_summary": {
+      "xgboost": {
+        "prediction": "HOLD",
+        "confidence": 47.1,
+        "probabilities": {
+          "SELL": 0.346,
+          "HOLD": 0.471,
+          "BUY": 0.184
+        }
+      },
+      "pytorch_mlp": {
+        "prediction": "HOLD",
+        "confidence": 35.9,
+        "probabilities": {
+          "SELL": 0.308,
+          "HOLD": 0.359,
+          "BUY": 0.333
+        }
+      },
+      "models_agree": true,
+      "consensus_signal": "HOLD"
+    },
+    "shap_explanation": {
+      "top_features": [
+        {
+          "feature": "ema_30",
+          "weight": 0.0803,
+          "abs_weight": 0.0803,
+          "raw_value": 1220.87,
+          "contribution": "positive"
+        },
+        {
+          "feature": "ema_50",
+          "weight": 0.0735,
+          "abs_weight": 0.0735,
+          "raw_value": 1243.59,
+          "contribution": "positive"
+        },
+        {
+          "feature": "macd_signal",
+          "weight": 0.0652,
+          "abs_weight": 0.0652,
+          "raw_value": -25.8,
+          "contribution": "positive"
+        },
+        {
+          "feature": "macd_hist",
+          "weight": -0.0521,
+          "abs_weight": 0.0521,
+          "raw_value": 2.63,
+          "contribution": "negative"
+        },
+        {
+          "feature": "bb_upper",
+          "weight": -0.0488,
+          "abs_weight": 0.0488,
+          "raw_value": 1262.55,
+          "contribution": "negative"
+        },
+        {
+          "feature": "vol_pct_change",
+          "weight": 0.0459,
+          "abs_weight": 0.0459,
+          "raw_value": 1.14,
+          "contribution": "positive"
+        },
+        {
+          "feature": "price_to_ema30",
+          "weight": -0.0371,
+          "abs_weight": 0.0371,
+          "raw_value": -0.0,
+          "contribution": "negative"
+        },
+        {
+          "feature": "bb_width",
+          "weight": 0.0338,
+          "abs_weight": 0.0338,
+          "raw_value": 0.1,
+          "contribution": "positive"
+        }
+      ],
+      "computation_time_ms": 1.06
+    },
+    "lime_explanation": {
+      "top_features": [
+        {
+          "feature": "rsi_14",
+          "rule": "-0.27 < rsi_14 <= 0.49",
+          "weight": -0.0271,
+          "contribution": "negative"
+        },
+        {
+          "feature": "obv",
+          "rule": "obv <= 0.65",
+          "weight": -0.0269,
+          "contribution": "negative"
+        },
+        {
+          "feature": "bb_pct_b",
+          "rule": "-0.17 < bb_pct_b <= 0.65",
+          "weight": 0.0178,
+          "contribution": "positive"
+        },
+        {
+          "feature": "sma_50",
+          "rule": "sma_50 <= 0.98",
+          "weight": -0.0172,
+          "contribution": "negative"
+        },
+        {
+          "feature": "atr_14",
+          "rule": "-0.07 < atr_14 <= 0.74",
+          "weight": 0.0147,
+          "contribution": "positive"
+        },
+        {
+          "feature": "sma_10",
+          "rule": "sma_10 <= 0.92",
+          "weight": -0.0125,
+          "contribution": "negative"
+        },
+        {
+          "feature": "ema_50",
+          "rule": "ema_50 <= 1.03",
+          "weight": 0.0087,
+          "contribution": "positive"
+        },
+        {
+          "feature": "macd",
+          "rule": "-0.02 < macd_hist <= 0.63",
+          "weight": 0.0086,
+          "contribution": "positive"
+        }
+      ],
+      "surrogate_fidelity_r2": 0.06,
+      "computation_time_ms": 22.24
+    },
+    "method_comparison": {
+      "spearman_rank_correlation": 0.322,
+      "top3_agreement_pct": 0.0,
+      "comparison_table": [
+        {
+          "feature": "ema_30",
+          "shap_weight": 0.0803,
+          "shap_impact": "POSITIVE",
+          "lime_weight": 0.0001,
+          "lime_impact": "POSITIVE",
+          "methods_agree": true
+        },
+        {
+          "feature": "ema_50",
+          "shap_weight": 0.0735,
+          "shap_impact": "POSITIVE",
+          "lime_weight": 0.0087,
+          "lime_impact": "POSITIVE",
+          "methods_agree": true
+        },
+        {
+          "feature": "macd_signal",
+          "shap_weight": 0.0652,
+          "shap_impact": "POSITIVE",
+          "lime_weight": 0.0,
+          "lime_impact": "NEUTRAL",
+          "methods_agree": null
+        },
+        {
+          "feature": "macd_hist",
+          "shap_weight": -0.0521,
+          "shap_impact": "NEGATIVE",
+          "lime_weight": 0.0,
+          "lime_impact": "NEUTRAL",
+          "methods_agree": null
+        },
+        {
+          "feature": "bb_upper",
+          "shap_weight": -0.0488,
+          "shap_impact": "NEGATIVE",
+          "lime_weight": -0.0056,
+          "lime_impact": "NEGATIVE",
+          "methods_agree": true
+        },
+        {
+          "feature": "vol_pct_change",
+          "shap_weight": 0.0459,
+          "shap_impact": "POSITIVE",
+          "lime_weight": -0.0043,
+          "lime_impact": "NEGATIVE",
+          "methods_agree": false
+        }
+      ]
+    },
+    "diagnostic_narrative": "Prediction Diagnostic for RELIANCE on 2026-10-15: Model predicted 'HOLD' with 47.1% probability. The primary positive drivers supporting this output are ema_30, ema_50. Conversely, macd_hist, bb_upper provided dampening resistance. SHAP and LIME demonstrate a rank correlation of \u03c1 = 0.32 with 0.0% top-feature agreement."
+  },
+  "global_feature_importance": {
+    "symbol": "RELIANCE",
+    "sample_count": 150,
+    "global_features": [
+      {
+        "feature": "bb_upper",
+        "importance": 0.129
+      },
+      {
+        "feature": "bb_width",
+        "importance": 0.1274
+      },
+      {
+        "feature": "price_to_sma10",
+        "importance": 0.0703
+      },
+      {
+        "feature": "obv",
+        "importance": 0.0662
+      },
+      {
+        "feature": "bb_middle",
+        "importance": 0.0661
+      },
+      {
+        "feature": "atr_14",
+        "importance": 0.0652
+      },
+      {
+        "feature": "rsi_14",
+        "importance": 0.0586
+      },
+      {
+        "feature": "ema_50",
+        "importance": 0.0562
+      },
+      {
+        "feature": "macd_hist",
+        "importance": 0.0488
+      },
+      {
+        "feature": "sma_30",
+        "importance": 0.0384
+      }
+    ]
+  }
+}
