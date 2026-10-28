@@ -1,0 +1,40 @@
+{
+  "symbol": "RELIANCE",
+  "model": "TimeSeriesConv1D",
+  "channels": [
+    "close_to_open_ratio",
+    "ema_ratio",
+    "rsi_norm",
+    "macd_hist_norm",
+    "vol_ratio",
+    "atr_pct",
+    "ret_5d",
+    "bb_pct_b",
+    "high_low_spread",
+    "obv_norm"
+  ],
+  "metrics": {
+    "accuracy": 0.3508,
+    "precision": 0.4,
+    "recall": 0.3761,
+    "f1_score": 0.3477,
+    "roc_auc": 0.4826,
+    "samples_train": 1157,
+    "samples_val": 248,
+    "samples_test": 248,
+    "device": "mps",
+    "channels": [
+      "close_to_open_ratio",
+      "ema_ratio",
+      "rsi_norm",
+      "macd_hist_norm",
+      "vol_ratio",
+      "atr_pct",
+      "ret_5d",
+      "bb_pct_b",
+      "high_low_spread",
+      "obv_norm"
+    ],
+    "lookback_window": 30
+  }
+}

@@ -627,3 +627,200 @@ def api_autopilot_stream(session_id: str):
     return Response(event_stream(), mimetype="text/event-stream")
 
 
+# =====================================================================
+# XAI RESEARCH LAB & FACULTY MANDATE ENDPOINTS
+# =====================================================================
+
+@quantlens_bp.route("/api/quantlens/xai/feedback/perturb", methods=["GET", "POST"])
+def api_xai_feedback_perturb():
+    """
+    Reverts explanation-selected features back into the model to evaluate score drop and prediction flip.
+    Supports mean imputation, median imputation, zero imputation, and Gaussian noise.
+    """
+    from quantlens.xai_feedback import ExplanationFeedbackEngine
+    data = (request.get_json(silent=True) or {}) if request.method == "POST" else request.args
+    symbol = data.get("symbol", "RELIANCE")
+    sample_idx = int(data.get("sample_idx", -1))
+    target_date = data.get("target_date")
+    model_family = data.get("model_family", "xgboost")
+    explainer_type = data.get("explainer_type", "shap")
+    k_features = int(data.get("k_features", 4))
+    intervention = data.get("intervention", "mean_imputation")
+
+    engine = ExplanationFeedbackEngine(symbol=symbol)
+    res = engine.evaluate_feature_perturbation(
+        sample_idx=sample_idx,
+        target_date=target_date,
+        model_family=model_family,
+        explainer_type=explainer_type,
+        k_features=k_features,
+        intervention=intervention
+    )
+    return jsonify({"success": True, **res})
+
+
+@quantlens_bp.route("/api/quantlens/xai/feedback/retrain-benchmark", methods=["GET", "POST"])
+def api_xai_retrain_benchmark():
+    """
+    Compares 6 model variants retrained with feature selection subsets (Full vs SHAP vs LIME vs MI vs Random vs Ablation).
+    """
+    from quantlens.xai_feedback import ExplanationFeedbackEngine
+    data = (request.get_json(silent=True) or {}) if request.method == "POST" else request.args
+    symbol = data.get("symbol", "RELIANCE")
+    k_features = int(data.get("k_features", 6))
+    force_recompute = str(data.get("force_recompute", "false")).lower() in ("true", "1")
+
+    engine = ExplanationFeedbackEngine(symbol=symbol)
+    res = engine.run_retraining_benchmark(k_features=k_features, force_recompute=force_recompute)
+    return jsonify({"success": True, **res})
+
+
+@quantlens_bp.route("/api/quantlens/xai/feedback/cnn-gradcam", methods=["GET", "POST"])
+def api_xai_cnn_gradcam_feedback():
+    """
+    Reverts Grad-CAM temporal explanations back into TimeSeriesConv1D.
+    Masks peak salient temporal window vs control windows.
+    """
+    from quantlens.xai_feedback import ExplanationFeedbackEngine
+    data = (request.get_json(silent=True) or {}) if request.method == "POST" else request.args
+    symbol = data.get("symbol", "RELIANCE")
+    target_date = data.get("target_date")
+    mask_window_len = int(data.get("mask_window_len", 5))
+
+    engine = ExplanationFeedbackEngine(symbol=symbol)
+    res = engine.evaluate_cnn_gradcam_feedback(target_date=target_date, mask_window_len=mask_window_len)
+    return jsonify({"success": True, **res})
+
+
+@quantlens_bp.route("/api/quantlens/xai/metrics/comprehensive", methods=["GET", "POST"])
+def api_xai_metrics_comprehensive():
+    """
+    Evaluates all 10 scientific XAI metrics: Stability, Consistency, Faithfulness, Fidelity,
+    Robustness, Actionability, Confidence, Sensitivity, Sparsity, and Computational Cost.
+    """
+    from quantlens.xai_metrics import ScientificXAIEvaluator
+    data = (request.get_json(silent=True) or {}) if request.method == "POST" else request.args
+    symbol = data.get("symbol", "RELIANCE")
+    n_samples = int(data.get("n_samples", 12))
+
+    evaluator = ScientificXAIEvaluator(symbol=symbol)
+    res = evaluator.evaluate_10_metrics(n_samples=n_samples)
+    return jsonify({"success": True, **res})
+
+
+@quantlens_bp.route("/api/quantlens/xai/sensitivity/sweep", methods=["GET", "POST"])
+def api_xai_sensitivity_sweep():
+    """
+    Runs sensitivity experiments: input perturbation sweep, deletion curves, strategy parameters, and market regimes.
+    """
+    from quantlens.xai_sensitivity import SensitivityAnalysisLab
+    data = (request.get_json(silent=True) or {}) if request.method == "POST" else request.args
+    symbol = data.get("symbol", "RELIANCE")
+    exp_type = data.get("experiment_type", "perturbation")
+
+    lab = SensitivityAnalysisLab(symbol=symbol)
+    if exp_type == "deletion":
+        max_k = int(data.get("max_k", 6))
+        res = lab.run_deletion_curves_comparison(max_k=max_k)
+    elif exp_type == "strategy":
+        res = lab.run_strategy_parameter_sensitivity()
+    elif exp_type == "regime":
+        res = lab.run_market_regime_sensitivity()
+    else:
+        sample_idx = int(data.get("sample_idx", -1))
+        res = lab.run_input_perturbation_sweep(sample_idx=sample_idx)
+
+    return jsonify({"success": True, **res})
+
+
+@quantlens_bp.route("/api/quantlens/xai/gradcam/explain", methods=["GET", "POST"])
+def api_xai_gradcam_explain():
+    """
+    Returns 1D Grad-CAM temporal heatmap, high-saliency intervals, and channel attributions for a date.
+    """
+    from quantlens.models_cnn import CNNModelManager
+    from quantlens.xai_gradcam import GradCAMEngine
+    data = (request.get_json(silent=True) or {}) if request.method == "POST" else request.args
+    symbol = data.get("symbol", "RELIANCE")
+    target_date = data.get("target_date")
+
+    cnn_mgr = CNNModelManager(symbol=symbol)
+    cnn_mgr.load_model()
+    engine = GradCAMEngine(cnn_mgr)
+
+    if target_date:
+        res = engine.explain_by_date(target_date)
+    else:
+        last_window = cnn_mgr.X_all[-1] if cnn_mgr.X_all is not None else None
+        if last_window is None:
+            return jsonify({"success": False, "error": "CNN data not loaded"}), 400
+        res = engine.explain_window(last_window)
+        res["target_date"] = cnn_mgr.dates[-1] if cnn_mgr.dates else "latest"
+
+    return jsonify({"success": True, **res})
+
+
+@quantlens_bp.route("/api/quantlens/xai/actionability", methods=["GET", "POST"])
+def api_xai_actionability():
+    """
+    Evaluates investor actionability ratio and classifies features into tunable parameters vs exogenous market state.
+    """
+    from quantlens.xai_feedback import ExplanationFeedbackEngine
+    data = (request.get_json(silent=True) or {}) if request.method == "POST" else request.args
+    symbol = data.get("symbol", "RELIANCE")
+    engine = ExplanationFeedbackEngine(symbol=symbol)
+    res = engine.evaluate_counterfactual_actionability(current_strategy_params={})
+    return jsonify({"success": True, **res})
+
+
+@quantlens_bp.route("/api/quantlens/xai/research/overview", methods=["GET"])
+def api_xai_research_overview():
+    """
+    Consolidated scientific overview package for the XAI Research Lab dashboard.
+    Returns Model A (XGBoost), Model B (PyTorch MLP), Model C (TimeSeriesConv1D) status,
+    available explainers (SHAP, LIME, Grad-CAM), and MongoDB connection status.
+    """
+    from quantlens.ml_models import ModelManager
+    from quantlens.models_cnn import CNNModelManager
+    from quantlens.db_mongodb import get_mongodb
+    symbol = request.args.get("symbol", "RELIANCE")
+
+    model_mgr = ModelManager(symbol)
+    model_mgr.load_models()
+
+    cnn_mgr = CNNModelManager(symbol)
+    cnn_mgr.load_model()
+
+    db_mgr = get_mongodb()
+
+    overview = {
+        "success": True,
+        "symbol": symbol.upper(),
+        "models": {
+            "model_a_xgboost": {
+                "name": "XGBoost Classifier (Tree Ensemble)",
+                "input_features": 22,
+                "metrics": model_mgr.eval_metrics.get("xgboost", {})
+            },
+            "model_b_pytorch_mlp": {
+                "name": "PyTorch MLP (3-Layer Neural Network)",
+                "input_features": 22,
+                "metrics": model_mgr.eval_metrics.get("pytorch_mlp", {})
+            },
+            "model_c_timeseries_cnn": {
+                "name": "TimeSeriesConv1D (1D Temporal CNN)",
+                "channels": 10,
+                "lookback_window": 30,
+                "metrics": cnn_mgr.eval_metrics
+            }
+        },
+        "explainers": ["SHAP (TreeExplainer & Kernel)", "LIME (TabularExplainer)", "Grad-CAM (1D Temporal Saliency)"],
+        "database": {
+            "mongodb_connected": db_mgr.is_connected(),
+            "database_name": db_mgr.db_name
+        }
+    }
+    return jsonify(overview)
+
+
+

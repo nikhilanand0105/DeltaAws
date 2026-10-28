@@ -414,5 +414,11 @@ def get_mongodb() -> MongoDBManager:
     return mongodb_manager
 
 
+def get_mongo_db():
+    """Returns the PyMongo database object if connected, else None."""
+    mgr = get_mongodb()
+    return mgr.db if mgr.is_connected() else None
+
+
 get_mongodb_manager = get_mongodb
 
