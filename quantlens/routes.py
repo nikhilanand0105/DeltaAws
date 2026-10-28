@@ -13,7 +13,7 @@ import json
 import time
 import logging
 from typing import Dict, Any
-from flask import Blueprint, request, jsonify, render_template
+from flask import Blueprint, request, jsonify, render_template, Response
 
 from quantlens.strategy_schema import StrategyDefinition, StrategyParseResponse
 from quantlens.strategy_validator import validate_strategy
@@ -24,6 +24,18 @@ from quantlens.xai_evaluation import evaluate_xai_metrics
 from quantlens.paper_broker import get_paper_broker
 from quantlens.simulation_engine import SimulationEngine
 from quantlens.data_loader import get_available_symbols, load_historical_ohlcv
+from quantlens.orchestrator import (
+    create_analysis_run,
+    get_analysis_run,
+    execute_analysis_pipeline_generator,
+    answer_advisor_question
+)
+from quantlens.autopilot_engine import (
+    AutopilotSession,
+    init_autopilot_session,
+    get_autopilot_session,
+    _AUTOPILOT_SESSIONS
+)
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +55,63 @@ def api_symbols():
     """Returns available historical symbols."""
     symbols = get_available_symbols()
     return jsonify({"success": True, "symbols": symbols})
+
+
+@quantlens_bp.route("/api/quantlens/analyze-and-run", methods=["POST"])
+def api_analyze_and_run():
+    """Initializes an orchestrated 8-stage Strategy Intelligence analysis run."""
+    data = request.get_json(silent=True) or {}
+    prompt = data.get("prompt", "").strip()
+    symbol = data.get("symbol", "RELIANCE")
+
+    if not prompt:
+        return jsonify({"success": False, "error": "Prompt cannot be empty"}), 400
+
+    run_id = create_analysis_run(prompt=prompt, symbol=symbol)
+    return jsonify({
+        "success": True,
+        "run_id": run_id,
+        "symbol": symbol,
+        "stream_url": f"/api/quantlens/analysis-stream/{run_id}"
+    })
+
+
+@quantlens_bp.route("/api/quantlens/analysis-stream/<run_id>", methods=["GET"])
+def api_analysis_stream(run_id: str):
+    """Server-Sent Events (SSE) streaming endpoint for Strategy Intelligence Mission Control."""
+    return Response(
+        execute_analysis_pipeline_generator(run_id),
+        mimetype="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+            "Access-Control-Allow-Origin": "*"
+        }
+    )
+
+
+@quantlens_bp.route("/api/quantlens/analysis-status/<run_id>", methods=["GET"])
+def api_analysis_status(run_id: str):
+    """Returns current status and complete payload for an analysis run."""
+    run_info = get_analysis_run(run_id)
+    if not run_info:
+        return jsonify({"success": False, "error": "Run not found"}), 404
+    return jsonify({"success": True, "data": run_info})
+
+
+@quantlens_bp.route("/api/quantlens/advisor/qa", methods=["POST"])
+def api_advisor_qa():
+    """Grounded contextual Q&A endpoint for the AI Strategy Advisor."""
+    data = request.get_json(silent=True) or {}
+    question = data.get("question", "").strip()
+    strategy_dict = data.get("strategy", {})
+
+    if not question:
+        return jsonify({"success": False, "error": "Question cannot be empty"}), 400
+
+    result = answer_advisor_question(question=question, strategy_dict=strategy_dict)
+    return jsonify(result)
 
 
 @quantlens_bp.route("/api/quantlens/parse-strategy", methods=["POST"])
@@ -333,4 +402,228 @@ def api_db_status():
         "sqlite": sqlite_status,
         "mongodb": mongo_status
     })
+
+
+# -------------------------------------------------------------
+# QuantLens Autopilot Endpoints
+# -------------------------------------------------------------
+
+@quantlens_bp.route("/api/quantlens/autopilot/init", methods=["POST"])
+def api_autopilot_init():
+    """Initializes a new continuous paper-trading Autopilot session."""
+    data = request.get_json() or {}
+    symbol = data.get("symbol", "RELIANCE").upper().replace(".NS", "")
+    scenario = data.get("scenario", "trend_following")
+    window_bars = int(data.get("window_bars", 120))
+    initial_capital = float(data.get("initial_capital", 100000.0))
+    synthetic_type = data.get("synthetic_type")
+
+    raw_strat = data.get("strategy")
+    if isinstance(raw_strat, dict) and "strategy_id" in raw_strat:
+        try:
+            strategy = StrategyDefinition(**raw_strat)
+        except Exception:
+            strategy = StrategyDefinition(
+                strategy_id=raw_strat.get("strategy_id", f"ap-strat-{int(time.time())}"),
+                strategy_name=raw_strat.get("strategy_name", "EMA Crossover + RSI Strategy"),
+                symbol=symbol,
+                raw_prompt=raw_strat.get("raw_prompt", "Autopilot continuous trading")
+            )
+    else:
+        strategy = StrategyDefinition(
+            strategy_id=f"ap-strat-{int(time.time())}",
+            strategy_name=f"{symbol} EMA Crossover + RSI Autopilot",
+            symbol=symbol,
+            raw_prompt=f"Buy {symbol} whenever EMA 10 crosses above EMA 30 and RSI 14 is below 65. Sell when EMA 10 crosses below EMA 30 or SL 2% / TP 4%."
+        )
+
+    session = init_autopilot_session(
+        strategy=strategy,
+        symbol=symbol,
+        scenario=scenario,
+        window_bars=window_bars,
+        initial_capital=initial_capital,
+        synthetic_type=synthetic_type
+    )
+
+    return jsonify({"success": True, **session.get_state()})
+
+
+@quantlens_bp.route("/api/quantlens/autopilot/step", methods=["POST"])
+def api_autopilot_step():
+    """Advances simulation forward by N steps causally."""
+    data = request.get_json() or {}
+    session_id = data.get("session_id", "")
+    steps = max(1, min(int(data.get("steps", 1)), 50))
+
+    session = get_autopilot_session(session_id)
+    if not session:
+        return jsonify({"success": False, "error": f"Session '{session_id}' not found."}), 404
+
+    for _ in range(steps):
+        session.step()
+        if session.status == "COMPLETED" and not session.loop_mode:
+            break
+
+    return jsonify({"success": True, **session.get_state()})
+
+
+@quantlens_bp.route("/api/quantlens/autopilot/control", methods=["POST"])
+def api_autopilot_control():
+    """Controls simulation execution state: play, pause, resume, restart, set_speed, skip_to_signal, set_loop."""
+    data = request.get_json() or {}
+    session_id = data.get("session_id", "")
+    action = data.get("action", "").lower()
+
+    session = get_autopilot_session(session_id)
+    if not session:
+        return jsonify({"success": False, "error": f"Session '{session_id}' not found."}), 404
+
+    if action in ("play", "resume"):
+        session.status = "RUNNING"
+        session._record_activity(
+            event_type="SYSTEM",
+            title="Autopilot Simulation Resumed",
+            detail=f"Automated execution active at {session.playback_speed}x speed.",
+            status="info"
+        )
+    elif action == "pause":
+        session.status = "PAUSED"
+        session._record_activity(
+            event_type="SYSTEM",
+            title="Autopilot Simulation Paused",
+            detail=f"Replay halted at bar {session.current_idx} of {session.total_bars}.",
+            status="warning"
+        )
+    elif action == "restart":
+        session.current_idx = 1
+        session.broker.reset_account(session.initial_capital)
+        session.status = "READY"
+        session.equity_curve = [{
+            "step": 0,
+            "date": str(session.df["date"].iloc[0])[:10] if "date" in session.df.columns else "Day 0",
+            "timestamp": str(session.df["date"].iloc[0])[:10] if "date" in session.df.columns else "Day 0",
+            "equity": session.initial_capital,
+            "cash": session.initial_capital,
+            "invested": 0.0,
+            "unrealized_pnl": 0.0,
+            "realized_pnl": 0.0,
+            "drawdown_pct": 0.0
+        }]
+        session._record_activity(
+            event_type="SYSTEM",
+            title="Simulation Restarted",
+            detail=f"Account reset to ₹{session.initial_capital:,.2f}. Replay returned to day 1.",
+            status="info"
+        )
+    elif action == "set_speed":
+        speed = float(data.get("speed", 1))
+        session.playback_speed = speed
+        session._record_activity(
+            event_type="SYSTEM",
+            title="Playback Speed Adjusted",
+            detail=f"Speed changed to {speed}x.",
+            values={"speed": speed},
+            status="info"
+        )
+    elif action == "set_loop":
+        loop = bool(data.get("loop", False))
+        session.loop_mode = loop
+        session._record_activity(
+            event_type="SYSTEM",
+            title="Demo Loop Mode Changed",
+            detail=f"Continuous demo loop mode {'ENABLED' if loop else 'DISABLED'}.",
+            values={"loop": loop},
+            status="info"
+        )
+    elif action == "skip_to_signal":
+        session.skip_to_next_signal()
+
+    session.persist_session_checkpoint()
+    return jsonify({"success": True, **session.get_state()})
+
+
+@quantlens_bp.route("/api/quantlens/autopilot/state/<session_id>", methods=["GET"])
+@quantlens_bp.route("/api/quantlens/autopilot/state", methods=["GET"])
+def api_autopilot_state(session_id: str = ""):
+    """Returns current state and chart data for the active Autopilot session."""
+    session = get_autopilot_session(session_id)
+    if not session:
+        return jsonify({"success": False, "error": f"Session '{session_id}' not found."}), 404
+    return jsonify({"success": True, **session.get_state()})
+
+
+@quantlens_bp.route("/api/quantlens/autopilot/explain-trade", methods=["GET", "POST"])
+def api_autopilot_explain_trade():
+    """Returns transparent explainability package (rules, ML, SHAP, LIME, narrative) for a trade."""
+    if request.method == "POST":
+        data = request.get_json() or {}
+        order_id = data.get("order_id", "")
+        session_id = data.get("session_id", "")
+    else:
+        order_id = request.args.get("order_id", "")
+        session_id = request.args.get("session_id", "")
+
+    session = get_autopilot_session(session_id)
+    if not session:
+        return jsonify({"success": False, "error": "No active Autopilot session."}), 404
+
+    explanation = session.get_trade_explanation(order_id)
+    return jsonify(explanation)
+
+
+@quantlens_bp.route("/api/quantlens/autopilot/prepare-demo", methods=["POST"])
+def api_autopilot_prepare_demo():
+    """Pre-configures a flawless one-click demonstration session with Scenario A (Trend Following)."""
+    strategy = StrategyDefinition(
+        strategy_id=f"demo-strat-{int(time.time())}",
+        strategy_name="EMA Crossover + RSI Momentum Strategy",
+        symbol="RELIANCE",
+        raw_prompt="Buy RELIANCE whenever EMA 10 crosses above EMA 30 and RSI 14 is below 65. Sell when EMA 10 crosses below EMA 30, or when stop-loss reaches 2% or take-profit reaches 4%. Start with ₹1,00,000 and allocate a maximum of 10% of available cash per position."
+    )
+    session = init_autopilot_session(
+        strategy=strategy,
+        symbol="RELIANCE",
+        scenario="trend_following",
+        window_bars=120,
+        initial_capital=100000.0
+    )
+    return jsonify({
+        "success": True,
+        "message": "Demo session ready with ₹1,00,000 virtual capital and RELIANCE trend scenario.",
+        **session.get_state()
+    })
+
+
+@quantlens_bp.route("/api/quantlens/autopilot/summary/<session_id>", methods=["GET"])
+@quantlens_bp.route("/api/quantlens/autopilot/summary", methods=["GET"])
+def api_autopilot_summary(session_id: str = ""):
+    """Returns comprehensive performance KPIs, trade breakdown, and audit stats for the wrap-up report."""
+    session = get_autopilot_session(session_id)
+    if not session:
+        return jsonify({"success": False, "error": f"Session '{session_id}' not found."}), 404
+    return jsonify({"success": True, **session.get_summary()})
+
+
+@quantlens_bp.route("/api/quantlens/autopilot/stream/<session_id>", methods=["GET"])
+def api_autopilot_stream(session_id: str):
+    """Server-Sent Events endpoint streaming continuous simulation steps."""
+    session = get_autopilot_session(session_id)
+    if not session:
+        return jsonify({"success": False, "error": f"Session '{session_id}' not found."}), 404
+
+    def event_stream():
+        while session.status in ("RUNNING", "READY", "PAUSED"):
+            if session.status == "RUNNING":
+                session.step()
+            state = session.get_state()
+            yield f"data: {json.dumps(state)}\n\n"
+            delay = max(0.2, 1.0 / max(0.5, session.playback_speed))
+            time.sleep(delay)
+            if session.status == "COMPLETED" and not session.loop_mode:
+                yield f"data: {json.dumps(session.get_state())}\n\n"
+                break
+
+    return Response(event_stream(), mimetype="text/event-stream")
+
 

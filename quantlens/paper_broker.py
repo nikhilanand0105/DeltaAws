@@ -26,7 +26,12 @@ LEGACY_BACKUP_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "d
 class PaperBroker:
     """Simulated execution venue managing virtual cash, positions, orders, and audit trail in MongoDB."""
 
-    def __init__(self, initial_capital: float = 100000.0):
+    def __init__(
+        self,
+        initial_capital: float = 100000.0,
+        fee_rate: float = 0.0005,
+        slippage_rate: float = 0.0005
+    ):
         self.account_id = "default_paper_account"
         self.initial_capital = float(initial_capital)
         self.cash: float = float(initial_capital)
@@ -35,8 +40,10 @@ class PaperBroker:
         self.trade_history: List[Dict[str, Any]] = []
         self.audit_log: List[Dict[str, Any]] = []
         self.active_strategy: Optional[Dict[str, Any]] = None
-        self.fee_rate: float = 0.0005      # 0.05% brokerage & exchange turnover fee
-        self.slippage_rate: float = 0.0005  # 0.05% market execution slippage
+        self.fee_rate: float = float(fee_rate)           # 0.05% brokerage & exchange turnover fee
+        self.slippage_rate: float = float(slippage_rate) # 0.05% market execution slippage
+        self.trading_mode: str = "paper"                 # Strict virtual paper isolation
+        self.is_virtual: bool = True
 
         self.db_mgr = get_mongodb()
         self.load_state()
@@ -105,11 +112,13 @@ class PaperBroker:
         order_type: str = "market",
         strategy_id: Optional[str] = None,
         rule_reason: Optional[str] = None,
-        timestamp_str: Optional[str] = None
+        timestamp_str: Optional[str] = None,
+        reason_code: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Executes a simulated order in the paper broker ledger.
         Handles slippage, fees, cash deduction, position updates, and MongoDB persistence.
+        Guarantees strict double-entry accounting where Realized Net P&L = Delta Cash across full round trips.
         """
         sym = symbol.upper().replace(".NS", "")
         qty = int(quantity)
@@ -147,10 +156,12 @@ class PaperBroker:
                     "fill_price": None,
                     "gross_value": 0.0,
                     "fee": 0.0,
+                    "brokerage_fee": 0.0,
                     "status": "REJECTED",
                     "reason": rejection_msg,
                     "strategy_id": strategy_id,
                     "rule_reason": rule_reason or "Manual Paper Trade",
+                    "reason_code": reason_code or "REJECT_INSUFFICIENT_FUNDS",
                     "idempotency_key": idempotency_key
                 }
                 self.orders.insert(0, rejected_record)
@@ -162,7 +173,7 @@ class PaperBroker:
             # Deduct virtual cash
             self.cash -= total_required
 
-            # Update or create position
+            # Update or create position with entry fee tracking
             if sym in self.positions:
                 pos = self.positions[sym]
                 new_shares = pos["shares"] + qty
@@ -171,6 +182,7 @@ class PaperBroker:
                 pos["current_price"] = fill_price
                 pos["unrealized_pnl"] = round((fill_price - pos["avg_price"]) * new_shares, 2)
                 pos["return_pct"] = round(((fill_price - pos["avg_price"]) / pos["avg_price"]) * 100.0, 2)
+                pos["entry_fee"] = round(pos.get("entry_fee", 0.0) + fee, 2)
             else:
                 self.positions[sym] = {
                     "symbol": sym,
@@ -179,7 +191,8 @@ class PaperBroker:
                     "current_price": fill_price,
                     "unrealized_pnl": 0.0,
                     "return_pct": 0.0,
-                    "opened_at": now_str
+                    "opened_at": now_str,
+                    "entry_fee": fee
                 }
 
             order_record = {
@@ -194,9 +207,11 @@ class PaperBroker:
                 "fill_price": fill_price,
                 "gross_value": gross_value,
                 "fee": fee,
+                "brokerage_fee": fee,
                 "status": "EXECUTED",
                 "strategy_id": strategy_id,
                 "rule_reason": rule_reason or "Manual Paper Trade",
+                "reason_code": reason_code or "ENTRY_SIGNAL",
                 "idempotency_key": idempotency_key
             }
             self.orders.insert(0, order_record)
@@ -225,10 +240,12 @@ class PaperBroker:
                     "fill_price": None,
                     "gross_value": 0.0,
                     "fee": 0.0,
+                    "brokerage_fee": 0.0,
                     "status": "REJECTED",
                     "reason": rejection_msg,
                     "strategy_id": strategy_id,
                     "rule_reason": rule_reason or "Manual Paper Trade",
+                    "reason_code": reason_code or "REJECT_POSITION_LIMIT",
                     "idempotency_key": idempotency_key
                 }
                 self.orders.insert(0, rejected_record)
@@ -241,11 +258,13 @@ class PaperBroker:
             net_proceeds = gross_value - fee
             self.cash += net_proceeds
 
-            # Calculate realized P&L
-            cost_basis = pos["avg_price"] * qty
-            gross_pnl = gross_value - cost_basis
-            net_pnl = round(gross_pnl - fee, 2)
-            return_pct = round((gross_pnl / cost_basis) * 100.0, 2) if cost_basis > 0 else 0.0
+            # Calculate realized P&L with round-trip fee friction
+            cost_basis = round(pos["avg_price"] * qty, 2)
+            gross_pnl = round(gross_value - cost_basis, 2)
+            allocated_entry_fee = round((pos.get("entry_fee", 0.0) / pos["shares"]) * qty, 2) if pos["shares"] > 0 else 0.0
+            total_friction = round(allocated_entry_fee + fee, 2)
+            net_pnl = round(gross_pnl - total_friction, 2)
+            return_pct = round((net_pnl / cost_basis) * 100.0, 2) if cost_basis > 0 else 0.0
 
             # Update position
             remaining_shares = pos["shares"] - qty
@@ -255,6 +274,7 @@ class PaperBroker:
                 pos["shares"] = remaining_shares
                 pos["current_price"] = fill_price
                 pos["unrealized_pnl"] = round((fill_price - pos["avg_price"]) * remaining_shares, 2)
+                pos["entry_fee"] = max(0.0, round(pos.get("entry_fee", 0.0) - allocated_entry_fee, 2))
 
             order_record = {
                 "order_id": order_id,
@@ -268,9 +288,11 @@ class PaperBroker:
                 "fill_price": fill_price,
                 "gross_value": gross_value,
                 "fee": fee,
+                "brokerage_fee": fee,
                 "status": "EXECUTED",
                 "strategy_id": strategy_id,
                 "rule_reason": rule_reason or "Manual Paper Trade",
+                "reason_code": reason_code or "EXIT_SIGNAL",
                 "idempotency_key": idempotency_key
             }
             self.orders.insert(0, order_record)
@@ -284,11 +306,15 @@ class PaperBroker:
                 "exit_date": now_str,
                 "entry_price": pos["avg_price"],
                 "exit_price": fill_price,
-                "gross_pnl": round(gross_pnl, 2),
-                "fees": fee,
+                "gross_pnl": gross_pnl,
+                "entry_fee": allocated_entry_fee,
+                "exit_fee": fee,
+                "fees": total_friction,
+                "total_friction": total_friction,
                 "net_pnl": net_pnl,
                 "return_pct": return_pct,
-                "exit_reason": rule_reason or "Take Profit / Stop Loss / Signal Exit"
+                "exit_reason": rule_reason or "Take Profit / Stop Loss / Signal Exit",
+                "reason_code": reason_code or "EXIT_SIGNAL"
             }
             self.trade_history.insert(0, trade_record)
 
@@ -328,8 +354,10 @@ class PaperBroker:
             "account_id": self.account_id,
             "initial_capital": self.initial_capital,
             "available_cash": round(self.cash, 2),
+            "cash": round(self.cash, 2),
             "invested_value": round(invested_val, 2),
             "total_portfolio_value": round(total_portfolio, 2),
+            "portfolio_value": round(total_portfolio, 2),
             "total_pnl": round(total_pnl, 2),
             "total_pnl_pct": round(total_pnl_pct, 2),
             "realized_pnl": round(realized_pnl, 2),
@@ -337,9 +365,13 @@ class PaperBroker:
             "open_positions_count": len(self.positions),
             "completed_orders_count": len([o for o in self.orders if o["status"] == "EXECUTED"]),
             "open_positions": list(self.positions.values()),
+            "positions": self.positions,
             "recent_orders": self.orders[:15],
+            "orders": self.orders,
             "recent_trades": self.trade_history[:15],
+            "trade_history": self.trade_history,
             "audit_trail": self.audit_log[:25],
+            "audit_log": self.audit_log,
             "active_strategy": self.active_strategy,
             "trading_mode": "PAPER TRADING — VIRTUAL FUNDS ONLY",
             "storage_backend": "MongoDB Community Edition" if self.db_mgr.is_connected() else "In-Memory / JSON Fallback"

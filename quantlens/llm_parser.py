@@ -95,7 +95,7 @@ Extract algorithmic trading rules from the user's natural language description.
 Respond ONLY with a valid JSON object matching this schema:
 {
   "strategy_name": "string",
-  "symbol": "RELIANCE | TCS | INFY | NIFTY50",
+  "symbol": "RELIANCE",
   "timeframe": "daily",
   "ema_fast": integer (e.g. 10),
   "ema_slow": integer (e.g. 30),
@@ -107,6 +107,7 @@ Respond ONLY with a valid JSON object matching this schema:
   "max_allocation_pct": float (e.g. 10.0),
   "max_open_positions": integer (e.g. 1)
 }
+Allowed symbols: RELIANCE, TCS, INFY, NIFTY50. Pick the one matching the user prompt.
 Do not include commentary or markdown. Output raw JSON only."""
 
 
@@ -251,6 +252,17 @@ def parse_strategy_with_llm(prompt: str, preferred_symbol: Optional[str] = None)
             if res.status_code == 200:
                 resp_text = res.json().get("response", "{}")
                 parsed_json = json.loads(resp_text)
+                if isinstance(parsed_json, dict) and "symbol" in parsed_json:
+                    raw_sym = str(parsed_json["symbol"]).strip().upper()
+                    if "|" in raw_sym or raw_sym not in ["RELIANCE", "TCS", "INFY", "NIFTY50", "RELIANCE.NS", "TCS.NS", "INFY.NS"]:
+                        if "TCS" in prompt.upper():
+                            parsed_json["symbol"] = "TCS"
+                        elif "INFY" in prompt.upper():
+                            parsed_json["symbol"] = "INFY"
+                        elif "NIFTY" in prompt.upper():
+                            parsed_json["symbol"] = "NIFTY50"
+                        else:
+                            parsed_json["symbol"] = preferred_symbol or "RELIANCE"
         except Exception as e:
             logger.warning(f"Ollama inference error: {e}. Activating deterministic verified fallback.")
 

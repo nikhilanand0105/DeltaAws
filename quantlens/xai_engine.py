@@ -47,6 +47,13 @@ class XAIEngine:
 
         self.X_scaled = self.model_mgr.scaler.transform(self.X.values)
 
+        # Full feature matrix for exact date-based lookup across all candles
+        from quantlens.feature_engineering import extract_technical_features
+        feat_df = extract_technical_features(df)[self.feature_cols].replace([np.inf, -np.inf], np.nan).ffill().bfill().fillna(0.0)
+        self.full_X = feat_df
+        self.full_X_scaled = self.model_mgr.scaler.transform(self.full_X.values)
+        self.dates = [str(d)[:10] for d in self.df["date"]] if "date" in self.df.columns else []
+
         # Initialize Explainers
         self.tree_explainer = shap.TreeExplainer(self.model_mgr.xgb_model)
         self.background_samples = self.X_scaled[-100:]  # 100 background samples
@@ -71,10 +78,12 @@ class XAIEngine:
     def explain_sample(
         self,
         sample_idx: int = -1,
+        target_date: Optional[str] = None,
         target_model: str = "xgboost"
     ) -> Dict[str, Any]:
         """
         Generates complete local SHAP and LIME explanations for a specific historical candle.
+        Supports exact date matching via target_date (e.g. '2026-05-06') to guarantee 100% temporal alignment.
         Returns:
           - Model prediction & confidence
           - SHAP local attributions (waterfall breakdown)
@@ -83,18 +92,34 @@ class XAIEngine:
           - Natural language XAI diagnostic interpretation
         """
         start_t = time.time()
-        idx = sample_idx if sample_idx >= 0 else len(self.X_scaled) + sample_idx
-        idx = max(0, min(idx, len(self.X_scaled) - 1))
 
-        sample_scaled = self.X_scaled[idx : idx + 1]
-        sample_raw = self.X.iloc[idx].to_dict()
-
-        # Date of sample
-        date_str = str(self.df["date"].iloc[idx + 50].date()) if "date" in self.df.columns else f"Bar {idx}"
+        # Locate sample row either by date (primary) or by index
+        if target_date and hasattr(self, "dates") and len(self.dates) > 0:
+            target_str = str(target_date)[:10]
+            if target_str in self.dates:
+                idx = self.dates.index(target_str)
+                sample_scaled = self.full_X_scaled[idx : idx + 1]
+                sample_raw = self.full_X.iloc[idx].to_dict()
+                sample_raw_values = self.full_X.iloc[idx].values
+                date_str = target_str
+            else:
+                idx = sample_idx if sample_idx >= 0 else len(self.full_X_scaled) + sample_idx
+                idx = max(0, min(idx, len(self.full_X_scaled) - 1))
+                sample_scaled = self.full_X_scaled[idx : idx + 1]
+                sample_raw = self.full_X.iloc[idx].to_dict()
+                sample_raw_values = self.full_X.iloc[idx].values
+                date_str = self.dates[idx] if idx < len(self.dates) else f"Bar {idx}"
+        else:
+            idx = sample_idx if sample_idx >= 0 else len(self.X_scaled) + sample_idx
+            idx = max(0, min(idx, len(self.X_scaled) - 1))
+            sample_scaled = self.X_scaled[idx : idx + 1]
+            sample_raw = self.X.iloc[idx].to_dict()
+            sample_raw_values = self.X.iloc[idx].values
+            date_str = str(self.df["date"].iloc[idx + 50].date()) if "date" in self.df.columns and idx + 50 < len(self.df) else f"Bar {idx}"
 
         # 1. Predictions
-        preds = self.model_mgr.predict_sample(self.X.iloc[idx].values)
-        chosen_pred = preds["xgboost"] if target_model == "xgboost" else preds["pytorch_mlp"]
+        preds = self.model_mgr.predict_sample(sample_raw_values)
+        chosen_pred = preds["xgboost"] if target_model.lower() == "xgboost" else preds["pytorch_mlp"]
         pred_label = chosen_pred["prediction"]
         pred_class_idx = CLASS_NAMES.index(pred_label)
 
@@ -124,7 +149,7 @@ class XAIEngine:
             else self._pytorch_predict_fn
         )
         exp = self.lime_explainer.explain_instance(
-            self.X_scaled[idx],
+            sample_scaled[0],
             predict_fn,
             num_features=len(self.feature_cols),
             labels=[pred_class_idx]
@@ -269,20 +294,28 @@ def get_xai_engine(symbol: str = "RELIANCE") -> XAIEngine:
     return _xai_engines[sym]
 
 
-def get_xai_explanation(symbol: str = "RELIANCE", bar_index: int = -1, target_model: str = "xgboost") -> Dict[str, Any]:
-    """Generates complete local explanation for a specific historical bar with MongoDB caching."""
+def get_xai_explanation(
+    symbol: str = "RELIANCE",
+    bar_index: int = -1,
+    target_date: Optional[str] = None,
+    target_model: str = "xgboost"
+) -> Dict[str, Any]:
+    """Generates complete local explanation for a specific historical bar or date with MongoDB caching."""
     from quantlens.db_mongodb import get_mongodb
     db_mgr = get_mongodb()
 
+    cache_identifier = target_date[:10] if target_date else bar_index
+
     if db_mgr.is_connected():
-        cached = db_mgr.get_cached_xai_explanation(symbol, bar_index, target_model)
+        cached = db_mgr.get_cached_xai_explanation(symbol, cache_identifier, target_model)
         if cached:
             return cached
 
     engine = get_xai_engine(symbol)
-    res = engine.explain_sample(sample_idx=bar_index, target_model=target_model)
+    res = engine.explain_sample(sample_idx=bar_index, target_date=target_date, target_model=target_model)
 
     if db_mgr.is_connected():
+        res["sample_identifier"] = cache_identifier
         db_mgr.save_xai_explanation(res)
 
     return res
