@@ -1,0 +1,75 @@
+experiment_id,category,model_name,explainer_method,dataset_split,metric_name,metric_value,unit,better_direction,data_type,provenance_source
+EXP-BASE-01,Baseline Performance,XGBoost,None,Test Split (248 days),Accuracy,32.24,%,higher,Measured Result,models/models_meta_reliance.json
+EXP-BASE-02,Baseline Performance,XGBoost,None,Test Split (248 days),Precision Macro,32.61,%,higher,Measured Result,models/models_meta_reliance.json
+EXP-BASE-03,Baseline Performance,XGBoost,None,Test Split (248 days),Recall Macro,33.15,%,higher,Measured Result,models/models_meta_reliance.json
+EXP-BASE-04,Baseline Performance,XGBoost,None,Test Split (248 days),Macro F1,28.97,%,higher,Measured Result,models/models_meta_reliance.json
+EXP-BASE-05,Baseline Performance,XGBoost,None,Test Split (248 days),Macro ROC-AUC,53.20,%,higher,Measured Result,models/models_meta_reliance.json
+EXP-BASE-06,Baseline Performance,XGBoost,None,Test Split (248 days),Log Loss,1.2589,score,lower,Measured Result,quantlens/ml_models.py
+EXP-BASE-07,Baseline Performance,XGBoost,None,Test Split (248 days),Inference Latency,0.045,ms,lower,Measured Result,quantlens/xai_feedback.py
+EXP-BASE-08,Baseline Performance,PyTorch MLP,None,Test Split (248 days),Accuracy,33.87,%,higher,Measured Result,models/models_meta_reliance.json
+EXP-BASE-09,Baseline Performance,PyTorch MLP,None,Test Split (248 days),Precision Macro,31.95,%,higher,Measured Result,models/models_meta_reliance.json
+EXP-BASE-10,Baseline Performance,PyTorch MLP,None,Test Split (248 days),Recall Macro,34.02,%,higher,Measured Result,models/models_meta_reliance.json
+EXP-BASE-11,Baseline Performance,PyTorch MLP,None,Test Split (248 days),Macro F1,28.52,%,higher,Measured Result,models/models_meta_reliance.json
+EXP-BASE-12,Baseline Performance,PyTorch MLP,None,Test Split (248 days),Macro ROC-AUC,52.80,%,higher,Measured Result,models/models_meta_reliance.json
+EXP-BASE-13,Baseline Performance,PyTorch MLP,None,Test Split (248 days),Log Loss,1.2842,score,lower,Measured Result,quantlens/ml_models.py
+EXP-BASE-14,Baseline Performance,PyTorch MLP,None,Test Split (248 days),Inference Latency,0.082,ms,lower,Measured Result,quantlens/ml_models.py
+EXP-BASE-15,Baseline Performance,Model C TimeSeriesConv1D,None,Test Split (248 days),Accuracy,35.08,%,higher,Measured Result,models/models_meta_cnn_reliance.json
+EXP-BASE-16,Baseline Performance,Model C TimeSeriesConv1D,None,Test Split (248 days),Precision Macro,40.00,%,higher,Measured Result,models/models_meta_cnn_reliance.json
+EXP-BASE-17,Baseline Performance,Model C TimeSeriesConv1D,None,Test Split (248 days),Recall Macro,37.61,%,higher,Measured Result,models/models_meta_cnn_reliance.json
+EXP-BASE-18,Baseline Performance,Model C TimeSeriesConv1D,None,Test Split (248 days),Macro F1,34.77,%,higher,Measured Result,models/models_meta_cnn_reliance.json
+EXP-BASE-19,Baseline Performance,Model C TimeSeriesConv1D,None,Test Split (248 days),Macro ROC-AUC,48.26,%,higher,Measured Result,models/models_meta_cnn_reliance.json
+EXP-BASE-20,Baseline Performance,Model C TimeSeriesConv1D,None,Test Split (248 days),Inference Latency,0.095,ms,lower,Measured Result,quantlens/models_cnn.py
+EXP-EXPL-01,Explanation Generation,XGBoost,SHAP TreeExplainer,Candle 2026-05-06,Execution Latency,1.02,ms,lower,Measured Result,quantlens/xai_engine.py
+EXP-EXPL-02,Explanation Generation,XGBoost,SHAP TreeExplainer,Candle 2026-05-06,Top Feature Importance,0.0803,weight,higher,Measured Result,quantlens/xai_engine.py
+EXP-EXPL-03,Explanation Generation,XGBoost,LIME Tabular,Candle 2026-05-06,Execution Latency,21.34,ms,lower,Measured Result,quantlens/xai_engine.py
+EXP-EXPL-04,Explanation Generation,XGBoost,LIME Tabular,Candle 2026-05-06,Surrogate Fidelity R2,0.0858,score,higher,Measured Result,quantlens/xai_engine.py
+EXP-EXPL-05,Explanation Generation,Model C TimeSeriesConv1D,1D Grad-CAM,Candle 2026-05-06,Execution Latency,3.42,ms,lower,Measured Result,quantlens/xai_gradcam.py
+EXP-EXPL-06,Explanation Generation,Model C TimeSeriesConv1D,1D Grad-CAM,Candle 2026-05-06,Peak Temporal Saliency Bar,-4,day offset,exact,Measured Result,quantlens/xai_gradcam.py
+EXP-EXPL-07,Explanation Generation,Model C TimeSeriesConv1D,1D Grad-CAM,Candle 2026-05-06,Peak Saliency Value,0.941,normalized,higher,Measured Result,quantlens/xai_gradcam.py
+EXP-FB-01,Closed-Loop Feedback,XGBoost,SHAP Top-4 Intervention,Candle 2026-05-06,Target Class Score Drop,42.1,%,higher,Measured Result,quantlens/xai_feedback.py
+EXP-FB-02,Closed-Loop Feedback,XGBoost,Random-4 Control,Candle 2026-05-06,Target Class Score Drop,7.1,%,lower,Measured Result,quantlens/xai_feedback.py
+EXP-FB-03,Closed-Loop Feedback,XGBoost,Least-4 Control,Candle 2026-05-06,Target Class Score Drop,3.8,%,lower,Measured Result,quantlens/xai_feedback.py
+EXP-FB-04,Closed-Loop Feedback,XGBoost,SHAP vs Random Control,Candle 2026-05-06,Faithfulness Drop Ratio,5.93,ratio,higher,Measured Result,quantlens/xai_feedback.py
+EXP-FB-05,Closed-Loop Feedback,XGBoost,SHAP Top-4 Intervention,Candle 2026-05-06,Prediction Flip Status,1,boolean,informative,Measured Result,quantlens/xai_feedback.py
+EXP-FB-06,Closed-Loop Feedback,Model C TimeSeriesConv1D,Grad-CAM Peak Window Mask (5 bars),Candle 2026-05-06,Target Class Score Drop,24.8,%,higher,Measured Result,quantlens/xai_feedback.py
+EXP-FB-07,Closed-Loop Feedback,Model C TimeSeriesConv1D,Random 5-Bar Window Mask,Candle 2026-05-06,Target Class Score Drop,2.9,%,lower,Measured Result,quantlens/xai_feedback.py
+EXP-FB-08,Closed-Loop Feedback,Model C TimeSeriesConv1D,Least Salient 5-Bar Mask,Candle 2026-05-06,Target Class Score Drop,1.9,%,lower,Measured Result,quantlens/xai_feedback.py
+EXP-RET-01,Retraining Benchmark,XGBoost,SHAP-Selected (Top-6),Test Split (248 days),Macro F1,34.10,%,higher,Measured Result,subreports/assets/model_results/retraining_leaderboard_f1.png
+EXP-RET-02,Retraining Benchmark,XGBoost,SHAP-Selected (Top-6),Test Split (248 days),Accuracy,35.92,%,higher,Measured Result,quantlens/xai_feedback.py
+EXP-RET-03,Retraining Benchmark,XGBoost,SHAP-Selected (Top-6),Test Split (248 days),Log Loss,1.2399,score,lower,Measured Result,quantlens/xai_feedback.py
+EXP-RET-04,Retraining Benchmark,XGBoost,SHAP-Selected (Top-6),Test Split (248 days),Latency per Sample,0.023,ms,lower,Measured Result,quantlens/xai_feedback.py
+EXP-RET-05,Retraining Benchmark,XGBoost,Random Control (6 Feats),Test Split (248 days),Macro F1,32.80,%,higher,Measured Result,quantlens/xai_feedback.py
+EXP-RET-06,Retraining Benchmark,XGBoost,Ablation (Drop Top-3 SHAP),Test Split (248 days),Macro F1,30.83,%,higher,Measured Result,quantlens/xai_feedback.py
+EXP-RET-07,Retraining Benchmark,XGBoost,Mutual Info (Top-6),Test Split (248 days),Macro F1,30.62,%,higher,Measured Result,quantlens/xai_feedback.py
+EXP-RET-08,Retraining Benchmark,XGBoost,LIME-Selected (Top-6),Test Split (248 days),Macro F1,29.93,%,higher,Measured Result,quantlens/xai_feedback.py
+EXP-RET-09,Retraining Benchmark,XGBoost,Full Baseline (22 Feats),Test Split (248 days),Macro F1,28.97,%,higher,Measured Result,quantlens/xai_feedback.py
+EXP-MET-01,Academic 10-Metric Suite,XGBoost,SHAP,Test Split (15 samples),Stability (Cosine Sim),0.941,score,higher,Measured Result,quantlens/xai_metrics.py
+EXP-MET-02,Academic 10-Metric Suite,XGBoost,LIME,Test Split (15 samples),Stability (Cosine Sim),0.724,score,higher,Measured Result,quantlens/xai_metrics.py
+EXP-MET-03,Academic 10-Metric Suite,Model C TimeSeriesConv1D,Grad-CAM,Test Split (15 samples),Stability (Cosine Sim),0.912,score,higher,Measured Result,quantlens/xai_metrics.py
+EXP-MET-04,Academic 10-Metric Suite,XGBoost,SHAP vs LIME,Test Split (15 samples),Consistency (Spearman rho),0.352,correlation,higher,Measured Result,quantlens/xai_metrics.py
+EXP-MET-05,Academic 10-Metric Suite,XGBoost,SHAP vs LIME,Test Split (15 samples),Consistency (Kendall tau),0.284,correlation,higher,Measured Result,quantlens/xai_metrics.py
+EXP-MET-06,Academic 10-Metric Suite,XGBoost,SHAP vs LIME,Test Split (15 samples),Consistency (Top-5 Jaccard),0.400,overlap,higher,Measured Result,quantlens/xai_metrics.py
+EXP-MET-07,Academic 10-Metric Suite,XGBoost,SHAP,Test Split (15 samples),Faithfulness (Deletion AUC),0.492,AUC,lower,Measured Result,quantlens/xai_metrics.py
+EXP-MET-08,Academic 10-Metric Suite,XGBoost,LIME,Test Split (15 samples),Faithfulness (Deletion AUC),0.584,AUC,lower,Measured Result,quantlens/xai_metrics.py
+EXP-MET-09,Academic 10-Metric Suite,XGBoost,SHAP,Test Split (15 samples),Faithfulness (Monotonicity),0.833,ratio,higher,Measured Result,quantlens/xai_metrics.py
+EXP-MET-10,Academic 10-Metric Suite,XGBoost,LIME,Test Split (15 samples),Faithfulness (Monotonicity),0.667,ratio,higher,Measured Result,quantlens/xai_metrics.py
+EXP-MET-11,Academic 10-Metric Suite,XGBoost,SHAP,Test Split (15 samples),Fidelity (Additivity Error),0.000,error,lower,Measured Result,quantlens/xai_metrics.py
+EXP-MET-12,Academic 10-Metric Suite,XGBoost,LIME,Test Split (15 samples),Fidelity (Surrogate R2),0.887,R2,higher,Measured Result,quantlens/xai_metrics.py
+EXP-MET-13,Academic 10-Metric Suite,XGBoost,SHAP,Regime Shift (Low vs High ATR),Robustness,0.880,score,higher,Measured Result,quantlens/xai_metrics.py
+EXP-MET-14,Academic 10-Metric Suite,XGBoost,LIME,Regime Shift (Low vs High ATR),Robustness,0.765,score,higher,Measured Result,quantlens/xai_metrics.py
+EXP-MET-15,Academic 10-Metric Suite,Model C TimeSeriesConv1D,Grad-CAM,Regime Shift (Low vs High ATR),Robustness,0.895,score,higher,Measured Result,quantlens/xai_metrics.py
+EXP-MET-16,Academic 10-Metric Suite,All Models,Strategy Parameter Mapping,Full 22 Feature Space,Actionability Ratio,40.9,%,higher,Measured Result,quantlens/xai_metrics.py
+EXP-MET-17,Academic 10-Metric Suite,XGBoost,None,Test Split (150 samples),Expected Calibration Error (ECE),0.124,error,lower,Measured Result,quantlens/xai_metrics.py
+EXP-MET-18,Academic 10-Metric Suite,XGBoost,None,Test Split (150 samples),Predictive Entropy,0.842,bits,lower,Measured Result,quantlens/xai_metrics.py
+EXP-MET-19,Academic 10-Metric Suite,XGBoost,None,Test Split (150 samples),Brier Score,0.198,score,lower,Measured Result,quantlens/xai_metrics.py
+EXP-MET-20,Academic 10-Metric Suite,XGBoost,SHAP,Test Split (15 samples),Sensitivity Gradient,0.332,gradient,lower,Measured Result,quantlens/xai_metrics.py
+EXP-MET-21,Academic 10-Metric Suite,XGBoost,LIME,Test Split (15 samples),Sensitivity Gradient,0.097,gradient,lower,Measured Result,quantlens/xai_metrics.py
+EXP-MET-22,Academic 10-Metric Suite,XGBoost,SHAP,Test Split (15 samples),Sparsity (Gini Index),0.561,Gini,higher,Measured Result,quantlens/xai_metrics.py
+EXP-MET-23,Academic 10-Metric Suite,XGBoost,LIME,Test Split (15 samples),Sparsity (Gini Index),0.629,Gini,higher,Measured Result,quantlens/xai_metrics.py
+EXP-MET-24,Academic 10-Metric Suite,Model C TimeSeriesConv1D,Grad-CAM,Test Split (15 samples),Sparsity (Gini Index),0.548,Gini,higher,Measured Result,quantlens/xai_metrics.py
+EXP-MET-25,Academic 10-Metric Suite,XGBoost,SHAP,Test Split (15 samples),Computational Latency,1.02,ms,lower,Measured Result,quantlens/xai_metrics.py
+EXP-MET-26,Academic 10-Metric Suite,XGBoost,LIME,Test Split (15 samples),Computational Latency,21.34,ms,lower,Measured Result,quantlens/xai_metrics.py
+EXP-MET-27,Academic 10-Metric Suite,Model C TimeSeriesConv1D,Grad-CAM,Test Split (15 samples),Computational Latency,3.42,ms,lower,Measured Result,quantlens/xai_metrics.py
+EXP-SENS-01,Sensitivity Analysis,XGBoost,SHAP vs LIME,Noise Sweep delta=0.001 to 0.15,Stability Bifurcation Threshold,2.0,%,exact,Measured Result,quantlens/xai_sensitivity.py
+EXP-SENS-02,Sensitivity Analysis,XGBoost,SHAP,Calm Regime (ATR < 25th),Top Feature Importance ema_30,0.182,SHAP weight,higher,Measured Result,quantlens/xai_sensitivity.py
+EXP-SENS-03,Sensitivity Analysis,XGBoost,SHAP,Turbulent Regime (ATR > 75th),Top Feature Importance bb_upper,0.154,SHAP weight,higher,Measured Result,quantlens/xai_sensitivity.py
